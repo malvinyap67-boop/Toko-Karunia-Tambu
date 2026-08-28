@@ -44,6 +44,45 @@ body {
 .login-hint { color: #aaa; font-size: 12px; margin-top: 16px; }
 
 /* ─── Layout ────────────────────────────────────────────────────────────── */
+.topbar {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 56px;
+    background: #1a1a2e;
+    color: #fff;
+    align-items: center;
+    gap: 10px;
+    padding: 0 12px;
+    z-index: 98;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.menu-toggle {
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 4px 8px;
+    line-height: 1;
+}
+
+.topbar-logo {
+    width: 34px;
+    height: 34px;
+    object-fit: contain;
+    background: #fff;
+    border-radius: 8px;
+    padding: 2px;
+}
+
+.topbar-title { font-weight: 600; font-size: 15px; flex: 1; }
+
+.topbar-logout { color: #fff; text-decoration: none; font-size: 18px; }
+
 .sidebar {
     position: fixed;
     left: 0;
@@ -404,34 +443,38 @@ tbody tr:hover { background: #f8f9fa; }
 
 /* ─── Responsive ────────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
+    .topbar { display: flex; align-items: center; }
+
     .sidebar {
         position: fixed;
+        left: 0;
+        top: 0;
+        width: 260px;
+        height: 100vh;
+        transform: translateX(-100%);
+        transition: transform 0.25s ease;
+        overflow-y: auto;
+        box-shadow: 4px 0 20px rgba(0,0,0,0.35);
+    }
+
+    .sidebar.open { transform: translateX(0); }
+
+    .sidebar-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
         width: 100%;
-        height: auto;
-        bottom: 0;
-        top: auto;
-        flex-direction: row;
-        overflow-x: auto;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 99;
     }
 
-    .sidebar-header, .sidebar-footer { display: none; }
+    .sidebar-overlay.show { display: block; }
 
-    .sidebar-nav {
-        display: flex;
-        padding: 0;
-        width: 100%;
-    }
+    .sidebar-nav a.active { border-left: 3px solid #e94560; border-top: none; }
 
-    .sidebar-nav a {
-        padding: 12px 16px;
-        white-space: nowrap;
-        text-align: center;
-        font-size: 12px;
-    }
-
-    .sidebar-nav a.active { border-left: none; border-top: 3px solid #e94560; }
-
-    .main-content { margin-left: 0; padding: 16px; padding-bottom: 80px; }
+    .main-content { margin-left: 0; padding: 72px 16px 16px; }
 
     .dashboard-grid { grid-template-columns: 1fr; }
 

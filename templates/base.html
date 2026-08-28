@@ -8,7 +8,14 @@
 </head>
 <body>
     {% if 'user_id' in session %}
-    <div class="sidebar">
+    <div class="topbar">
+        <button class="menu-toggle" id="menuToggle" aria-label="Buka menu">☰</button>
+        <img src="{{ url_for('static', filename='logo/logo.png') }}" alt="Logo" class="topbar-logo">
+        <span class="topbar-title">Karunia Tambu</span>
+        <a href="{{ url_for('logout') }}" class="topbar-logout" title="Logout">🚪</a>
+    </div>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <img src="{{ url_for('static', filename='logo/logo.png') }}" alt="Logo Karunia Tambu" class="sidebar-logo">
             <h3>Karunia Tambu</h3>
@@ -67,5 +74,25 @@
     {% endwith %}
     {% block login_content %}{% endblock %}
     {% endif %}
+    <script>
+        (function () {
+            var sidebar = document.getElementById('sidebar');
+            var overlay = document.getElementById('sidebarOverlay');
+            var toggle = document.getElementById('menuToggle');
+            if (!sidebar || !toggle) return;
+            function closeMenu() {
+                sidebar.classList.remove('open');
+                overlay.classList.remove('show');
+            }
+            toggle.addEventListener('click', function () {
+                sidebar.classList.toggle('open');
+                overlay.classList.toggle('show');
+            });
+            overlay.addEventListener('click', closeMenu);
+            sidebar.querySelectorAll('.sidebar-nav a').forEach(function (a) {
+                a.addEventListener('click', closeMenu);
+            });
+        })();
+    </script>
 </body>
 </html>

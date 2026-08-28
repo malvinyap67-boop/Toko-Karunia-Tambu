@@ -64,10 +64,10 @@
     </div>
 </div>
 
-<!-- Daftar User -->
+<!-- Daftar Karyawan -->
 <div class="card">
     <div class="card-header">
-        <h3>👥 Daftar User</h3>
+        <h3>👥 Daftar Karyawan</h3>
     </div>
     <div class="card-body table-responsive">
         <table>
@@ -92,45 +92,6 @@
                         </span>
                     </td>
                     <td>{{ u.created_at[:10] }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<!-- Riwayat Login -->
-<div class="card" style="margin-top:20px;">
-    <div class="card-header">
-        <h3>🔑 Riwayat Login (30 terakhir)</h3>
-    </div>
-    <div class="card-body table-responsive">
-        <table>
-            <thead>
-                <tr>
-                    <th>No</th>
-                    <th>Username Diketik</th>
-                    <th>Status</th>
-                    <th>IP Perangkat</th>
-                    <th>Waktu</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for l in login_log %}
-                <tr>
-                    <td>{{ loop.index }}</td>
-                    <td><strong>{{ l.username or '(kosong)' }}</strong></td>
-                    <td>
-                        <span class="badge {% if l.status == 'sukses' %}badge-success{% else %}badge-danger{% endif %}">
-                            {{ l.status }}
-                        </span>
-                    </td>
-                    <td>{{ l.ip or '-' }}</td>
-                    <td>{{ l.waktu }}</td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="5" style="text-align:center; color:#888;">Belum ada riwayat login</td>
                 </tr>
                 {% endfor %}
             </tbody>
