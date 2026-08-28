@@ -81,8 +81,6 @@ body {
 
 .topbar-title { font-weight: 600; font-size: 15px; flex: 1; }
 
-.topbar-logout { color: #fff; text-decoration: none; font-size: 18px; }
-
 .sidebar {
     position: fixed;
     left: 0;
