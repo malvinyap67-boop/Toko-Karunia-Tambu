@@ -3,7 +3,9 @@
 {% block login_content %}
 <div class="login-container">
     <div class="login-box">
-        <div class="login-logo">🏪</div>
+        <div class="login-logo">
+            <img src="{{ url_for('static', filename='logo/logo.png') }}" alt="Logo Karunia Tambu">
+        </div>
         <h1>Toko Karunia Tambu</h1>
         <p class="login-subtitle">Sistem Manajemen Toko</p>
         <form method="POST" action="{{ url_for('login') }}">

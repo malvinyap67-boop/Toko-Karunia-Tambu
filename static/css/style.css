@@ -27,7 +27,18 @@ body {
     text-align: center;
 }
 
-.login-logo { font-size: 64px; margin-bottom: 10px; }
+.login-logo img {
+    width: 96px;
+    height: 96px;
+    object-fit: contain;
+    background: #fff;
+    border: 1px solid #ececec;
+    border-radius: 20px;
+    padding: 10px;
+    box-shadow: 0 8px 24px rgba(26,26,46,0.15);
+    margin-bottom: 14px;
+}
+.login-logo { margin-bottom: 6px; }
 .login-box h1 { font-size: 24px; color: #1a1a2e; margin-bottom: 4px; }
 .login-subtitle { color: #888; margin-bottom: 30px; }
 .login-hint { color: #aaa; font-size: 12px; margin-top: 16px; }
@@ -52,7 +63,19 @@ body {
     text-align: center;
 }
 
-.sidebar-header h3 { font-size: 18px; }
+.sidebar-header h3 { font-size: 18px; letter-spacing: 0.5px; }
+
+.sidebar-logo {
+    display: block;
+    width: 72px;
+    height: 72px;
+    object-fit: contain;
+    background: #fff;
+    border-radius: 16px;
+    padding: 8px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+    margin: 0 auto 10px;
+}
 
 .sidebar-nav {
     flex: 1;

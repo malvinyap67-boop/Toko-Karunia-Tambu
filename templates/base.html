@@ -10,7 +10,8 @@
     {% if 'user_id' in session %}
     <div class="sidebar">
         <div class="sidebar-header">
-            <h3>🏪 Karunia Tambu</h3>
+            <img src="{{ url_for('static', filename='logo/logo.png') }}" alt="Logo Karunia Tambu" class="sidebar-logo">
+            <h3>Karunia Tambu</h3>
         </div>
         <nav class="sidebar-nav">
             <a href="{{ url_for('dashboard') }}" class="{% if request.endpoint == 'dashboard' %}active{% endif %}">
