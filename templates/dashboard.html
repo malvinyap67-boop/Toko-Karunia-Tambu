@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - Toko Karunia Tambu{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>📊 Dashboard</h1>
+</div>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon">📦</div>
+        <div class="stat-info">
+            <h3>{{ total_barang }}</h3>
+            <p>Total Barang</p>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon">📋</div>
+        <div class="stat-info">
+            <h3>{{ total_stok }}</h3>
+            <p>Total Stok</p>
+        </div>
+    </div>
+    <div class="stat-card stat-warning">
+        <div class="stat-icon">⚠️</div>
+        <div class="stat-info">
+            <h3>{{ stok_habis }}</h3>
+            <p>Stok Habis</p>
+        </div>
+    </div>
+    <div class="stat-card stat-green">
+        <div class="stat-icon">💰</div>
+        <div class="stat-info">
+            <h3>Rp {{ "{:,.0f}".format(pemasukan_hari) }}</h3>
+            <p>Pemasukan Hari Ini</p>
+        </div>
+    </div>
+    <div class="stat-card stat-red">
+        <div class="stat-icon">💸</div>
+        <div class="stat-info">
+            <h3>Rp {{ "{:,.0f}".format(pengeluaran_hari) }}</h3>
+            <p>Pengeluaran Hari Ini</p>
+        </div>
+    </div>
+    <div class="stat-card stat-blue">
+        <div class="stat-icon">📈</div>
+        <div class="stat-info">
+            <h3>Rp {{ "{:,.0f}".format(pemasukan_bulan) }}</h3>
+            <p>Pemasukan Bulan Ini</p>
+        </div>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    <div class="card">
+        <div class="card-header">
+            <h3>⚠️ Stok Rendah (≤5)</h3>
+        </div>
+        <div class="card-body">
+            {% if barang_stok_rendah %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Kode</th>
+                        <th>Nama</th>
+                        <th>Stok</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for b in barang_stok_rendah %}
+                    <tr>
+                        <td>{{ b.kode }}</td>
+                        <td>{{ b.nama }}</td>
+                        <td>
+                            <span class="badge {% if b.stok == 0 %}badge-danger{% else %}badge-warning{% endif %}">
+                                {{ b.stok }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted">Semua stok aman</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h3>📦 Transaksi Stok Terakhir</h3>
+        </div>
+        <div class="card-body">
+            {% if transaksi_terakhir %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Tanggal</th>
+                        <th>Barang</th>
+                        <th>Jenis</th>
+                        <th>Jumlah</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in transaksi_terakhir %}
+                    <tr>
+                        <td>{{ t.tanggal }}</td>
+                        <td>{{ t.nama_barang }}</td>
+                        <td>
+                            <span class="badge {% if t.jenis == 'masuk' %}badge-success{% else %}badge-danger{% endif %}">
+                                {{ t.jenis|upper }}
+                            </span>
+                        </td>
+                        <td>{{ t.jumlah }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted">Belum ada transaksi</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

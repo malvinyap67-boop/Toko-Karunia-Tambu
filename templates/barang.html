@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+{% block title %}Barang - Toko Karunia Tambu{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>📦 Manajemen Barang</h1>
+    <button class="btn btn-primary" onclick="document.getElementById('tambahBarang').style.display='block'">
+        + Tambah Barang
+    </button>
+</div>
+
+<!-- Form Tambah Barang -->
+<div id="tambahBarang" class="card" style="display:none; margin-bottom:20px;">
+    <div class="card-header">
+        <h3>Tambah Barang Baru</h3>
+        <button class="btn btn-sm" onclick="this.parentElement.parentElement.style.display='none'">✕</button>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('barang_tambah') }}">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Kode Barang *</label>
+                    <input type="text" name="kode" placeholder="BRG001" required>
+                </div>
+                <div class="form-group">
+                    <label>Nama Barang *</label>
+                    <input type="text" name="nama" placeholder="Nama barang" required>
+                </div>
+                <div class="form-group">
+                    <label>Kategori</label>
+                    <select name="kategori_id">
+                        <option value="">-- Pilih Kategori --</option>
+                        {% for k in kategori %}
+                        <option value="{{ k.id }}">{{ k.nama }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Satuan</label>
+                    <select name="satuan">
+                        <option value="pcs">Pcs</option>
+                        <option value="kg">Kg</option>
+                        <option value="liter">Liter</option>
+                        <option value="box">Box</option>
+                        <option value="lusin">Lusin</option>
+                        <option value="rim">Rim</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Harga Beli (Rp)</label>
+                    <input type="number" name="harga_beli" placeholder="0" min="0">
+                </div>
+                <div class="form-group">
+                    <label>Harga Jual (Rp)</label>
+                    <input type="number" name="harga_jual" placeholder="0" min="0">
+                </div>
+                <div class="form-group">
+                    <label>Stok Awal</label>
+                    <input type="number" name="stok" placeholder="0" min="0" value="0">
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">💾 Simpan</button>
+        </form>
+    </div>
+</div>
+
+<!-- Filter & Search -->
+<div class="card" style="margin-bottom:20px;">
+    <div class="card-body">
+        <form method="GET" class="form-inline">
+            <input type="text" name="search" placeholder="🔍 Cari barang..." value="{{ search }}">
+            <select name="kategori">
+                <option value="">Semua Kategori</option>
+                {% for k in kategori %}
+                <option value="{{ k.id }}" {% if kategori_filter == k.id|string %}selected{% endif %}>{{ k.nama }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary">Cari</button>
+            <a href="{{ url_for('barang_list') }}" class="btn">Reset</a>
+        </form>
+    </div>
+</div>
+
+<!-- Daftar Barang -->
+<div class="card">
+    <div class="card-header">
+        <h3>Daftar Barang ({{ barang|length }} item)</h3>
+    </div>
+    <div class="card-body table-responsive">
+        {% if barang %}
+        <table>
+            <thead>
+                <tr>
+                    <th>No</th>
+                    <th>Kode</th>
+                    <th>Nama</th>
+                    <th>Kategori</th>
+                    <th>Harga Beli</th>
+                    <th>Harga Jual</th>
+                    <th>Stok</th>
+                    <th>Satuan</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for b in barang %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td><strong>{{ b.kode }}</strong></td>
+                    <td>{{ b.nama }}</td>
+                    <td>{{ b.nama_kategori or '-' }}</td>
+                    <td>Rp {{ "{:,.0f}".format(b.harga_beli) }}</td>
+                    <td>Rp {{ "{:,.0f}".format(b.harga_jual) }}</td>
+                    <td>
+                        <span class="badge {% if b.stok == 0 %}badge-danger{% elif b.stok <= 5 %}badge-warning{% else %}badge-success{% endif %}">
+                            {{ b.stok }}
+                        </span>
+                    </td>
+                    <td>{{ b.satuan }}</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="editBarang({{ b.id }}, '{{ b.kode }}', '{{ b.nama }}', {{ b.kategori_id or 0 }}, {{ b.harga_beli }}, {{ b.harga_jual }}, {{ b.stok }}, '{{ b.satuan }}')">Edit</button>
+                        {% if session.get('role') == 'admin' %}
+                        <a href="{{ url_for('barang_hapus', id=b.id) }}" class="btn btn-sm btn-danger"
+                           onclick="return confirm('Hapus barang {{ b.nama }}?')">Hapus</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted text-center">Belum ada data barang</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modal Edit -->
+<div id="editModal" class="modal" style="display:none;">
+    <div class="modal-content">
+        <div class="card-header">
+            <h3>Edit Barang</h3>
+            <button class="btn btn-sm" onclick="document.getElementById('editModal').style.display='none'">✕</button>
+        </div>
+        <div class="card-body">
+            <form id="editForm" method="POST">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Kode</label>
+                        <input type="text" id="edit_kode" readonly class="input-readonly">
+                    </div>
+                    <div class="form-group">
+                        <label>Nama</label>
+                        <input type="text" name="nama" id="edit_nama" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Kategori</label>
+                        <select name="kategori_id" id="edit_kategori">
+                            <option value="">-- Pilih --</option>
+                            {% for k in kategori %}
+                            <option value="{{ k.id }}">{{ k.nama }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Satuan</label>
+                        <select name="satuan" id="edit_satuan">
+                            <option value="pcs">Pcs</option>
+                            <option value="kg">Kg</option>
+                            <option value="liter">Liter</option>
+                            <option value="box">Box</option>
+                            <option value="lusin">Lusin</option>
+                            <option value="rim">Rim</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Harga Beli</label>
+                        <input type="number" name="harga_beli" id="edit_harga_beli" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Harga Jual</label>
+                        <input type="number" name="harga_jual" id="edit_harga_jual" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Stok</label>
+                        <input type="number" name="stok" id="edit_stok" min="0">
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary">💾 Update</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function editBarang(id, kode, nama, kategoriId, hargaBeli, hargaJual, stok, satuan) {
+    document.getElementById('editForm').action = '/barang/edit/' + id;
+    document.getElementById('edit_kode').value = kode;
+    document.getElementById('edit_nama').value = nama;
+    document.getElementById('edit_kategori').value = kategoriId || '';
+    document.getElementById('edit_harga_beli').value = hargaBeli;
+    document.getElementById('edit_harga_jual').value = hargaJual;
+    document.getElementById('edit_stok').value = stok;
+    document.getElementById('edit_satuan').value = satuan;
+    document.getElementById('editModal').style.display = 'flex';
+}
+</script>
+{% endblock %}

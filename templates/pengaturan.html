@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}Pengaturan - Toko Karunia Tambu{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>⚙️ Pengaturan</h1>
+</div>
+
+<!-- Info Toko -->
+<div class="card" style="margin-bottom:20px;">
+    <div class="card-header">
+        <h3>🏪 Informasi Toko</h3>
+    </div>
+    <div class="card-body">
+        <form method="POST">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Nama Toko</label>
+                    <input type="text" name="nama_toko" value="{{ pengaturan.nama_toko or '' }}">
+                </div>
+                <div class="form-group">
+                    <label>Alamat</label>
+                    <input type="text" name="alamat" value="{{ pengaturan.alamat or '' }}" placeholder="Alamat toko">
+                </div>
+                <div class="form-group">
+                    <label>Telepon</label>
+                    <input type="text" name="telepon" value="{{ pengaturan.telepon or '' }}" placeholder="08xxx">
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">💾 Simpan Pengaturan</button>
+        </form>
+    </div>
+</div>
+
+<!-- Tambah User -->
+<div class="card" style="margin-bottom:20px;">
+    <div class="card-header">
+        <h3>👤 Tambah User/Karyawan</h3>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('tambah_user') }}">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Username *</label>
+                    <input type="text" name="username" placeholder="username" required>
+                </div>
+                <div class="form-group">
+                    <label>Password *</label>
+                    <input type="password" name="password" placeholder="password" required>
+                </div>
+                <div class="form-group">
+                    <label>Nama Lengkap</label>
+                    <input type="text" name="nama_lengkap" placeholder="Nama lengkap">
+                </div>
+                <div class="form-group">
+                    <label>Role</label>
+                    <select name="role">
+                        <option value="karyawan">Karyawan</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary">➕ Tambah User</button>
+        </form>
+    </div>
+</div>
+
+<!-- Daftar User -->
+<div class="card">
+    <div class="card-header">
+        <h3>👥 Daftar User</h3>
+    </div>
+    <div class="card-body table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th>No</th>
+                    <th>Username</th>
+                    <th>Nama Lengkap</th>
+                    <th>Role</th>
+                    <th>Dibuat</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td><strong>{{ u.username }}</strong></td>
+                    <td>{{ u.nama_lengkap or '-' }}</td>
+                    <td>
+                        <span class="badge {% if u.role == 'admin' %}badge-primary{% else %}badge-success{% endif %}">
+                            {{ u.role|capitalize }}
+                        </span>
+                    </td>
+                    <td>{{ u.created_at[:10] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

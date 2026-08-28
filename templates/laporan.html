@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Laporan - Toko Karunia Tambu{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>📋 Laporan</h1>
+</div>
+
+<!-- Filter Bulan -->
+<div class="card" style="margin-bottom:20px;">
+    <div class="card-body">
+        <form method="GET" class="form-inline">
+            <label>Pilih Bulan:</label>
+            <input type="month" name="bulan" value="{{ bulan }}">
+            <button type="submit" class="btn btn-primary">📊 Lihat Laporan</button>
+        </form>
+    </div>
+</div>
+
+<!-- Ringkasan Keuangan -->
+<div class="stats-grid" style="grid-template-columns: repeat(3, 1fr);">
+    <div class="stat-card stat-green">
+        <div class="stat-icon">💰</div>
+        <div class="stat-info">
+            <h3>Rp {{ "{:,.0f}".format(total_pemasukan) }}</h3>
+            <p>Total Pemasukan</p>
+        </div>
+    </div>
+    <div class="stat-card stat-red">
+        <div class="stat-icon">💸</div>
+        <div class="stat-info">
+            <h3>Rp {{ "{:,.0f}".format(total_pengeluaran) }}</h3>
+            <p>Total Pengeluaran</p>
+        </div>
+    </div>
+    <div class="stat-card {% if laba_bersih >= 0 %}stat-blue{% else %}stat-warning{% endif %}">
+        <div class="stat-icon">📊</div>
+        <div class="stat-info">
+            <h3>Rp {{ "{:,.0f}".format(laba_bersih) }}</h3>
+            <p>Laba Bersih</p>
+        </div>
+    </div>
+</div>
+
+<div class="dashboard-grid">
+    <!-- Barang Terlaris -->
+    <div class="card">
+        <div class="card-header">
+            <h3>🏆 Barang Terlaris ({{ bulan }})</h3>
+        </div>
+        <div class="card-body table-responsive">
+            {% if barang_terlaris %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Kode</th>
+                        <th>Nama</th>
+                        <th>Terjual</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for b in barang_terlaris %}
+                    <tr>
+                        <td>
+                            {% if loop.index == 1 %}🥇
+                            {% elif loop.index == 2 %}🥈
+                            {% elif loop.index == 3 %}🥉
+                            {% else %}{{ loop.index }}
+                            {% endif %}
+                        </td>
+                        <td>{{ b.kode }}</td>
+                        <td>{{ b.nama }}</td>
+                        <td><strong>{{ b.total }}</strong></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted text-center">Belum ada penjualan bulan ini</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Stok Saat Ini -->
+    <div class="card">
+        <div class="card-header">
+            <h3>📦 Stok Saat Ini</h3>
+        </div>
+        <div class="card-body table-responsive">
+            {% if stok_saat_ini %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Kode</th>
+                        <th>Nama</th>
+                        <th>Kategori</th>
+                        <th>Stok</th>
+                        <th>Satuan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for b in stok_saat_ini %}
+                    <tr>
+                        <td>{{ b.kode }}</td>
+                        <td>{{ b.nama }}</td>
+                        <td>{{ b.kategori or '-' }}</td>
+                        <td>
+                            <span class="badge {% if b.stok == 0 %}badge-danger{% elif b.stok <= 5 %}badge-warning{% else %}badge-success{% endif %}">
+                                {{ b.stok }}
+                            </span>
+                        </td>
+                        <td>{{ b.satuan }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p class="text-muted text-center">Belum ada data barang</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

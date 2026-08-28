@@ -1,0 +1,14 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# App data (don't upload local database / secrets)
+database/toko.db
+instance/
+*.db
+
+# OS
+.DS_Store
+Thumbs.db

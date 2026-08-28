@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Toko Karunia Tambu{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    {% if 'user_id' in session %}
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h3>🏪 Karunia Tambu</h3>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('dashboard') }}" class="{% if request.endpoint == 'dashboard' %}active{% endif %}">
+                📊 Dashboard
+            </a>
+            <a href="{{ url_for('barang_list') }}" class="{% if request.endpoint == 'barang_list' %}active{% endif %}">
+                📦 Barang
+            </a>
+            <a href="{{ url_for('stok_page') }}" class="{% if request.endpoint == 'stok_page' %}active{% endif %}">
+                📥📦 Stok Masuk/Keluar
+            </a>
+            <a href="{{ url_for('keuangan_page') }}" class="{% if request.endpoint == 'keuangan_page' %}active{% endif %}">
+                💰 Keuangan
+            </a>
+            <a href="{{ url_for('laporan_page') }}" class="{% if request.endpoint == 'laporan_page' %}active{% endif %}">
+                📋 Laporan
+            </a>
+            {% if session.get('role') == 'admin' %}
+            <a href="{{ url_for('pengaturan_page') }}" class="{% if request.endpoint == 'pengaturan_page' %}active{% endif %}">
+                ⚙️ Pengaturan
+            </a>
+            {% endif %}
+        </nav>
+        <div class="sidebar-footer">
+            <div class="user-info">
+                <strong>{{ session.get('nama_lengkap') or session.get('username') }}</strong>
+                <small>({{ session.get('role') }})</small>
+            </div>
+            <a href="{{ url_for('logout') }}" class="btn-logout">🚪 Logout</a>
+        </div>
+    </div>
+    <div class="main-content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flash-messages">
+            {% for category, message in messages %}
+            <div class="flash flash-{{ category }}">{{ message }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </div>
+    {% else %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-messages" style="position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:9999;width:90%;max-width:400px;">
+        {% for category, message in messages %}
+        <div class="flash flash-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+    {% block login_content %}{% endblock %}
+    {% endif %}
+</body>
+</html>

@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}Stok - Toko Karunia Tambu{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>📥📦 Barang Masuk / Keluar</h1>
+</div>
+
+<!-- Form Input -->
+<div class="dashboard-grid">
+    <!-- Barang Masuk -->
+    <div class="card">
+        <div class="card-header card-header-green">
+            <h3>📥 Barang Masuk</h3>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('stok_masuk') }}">
+                <div class="form-group">
+                    <label>Barang *</label>
+                    <select name="barang_id" required>
+                        <option value="">-- Pilih Barang --</option>
+                        {% for b in barang %}
+                        <option value="{{ b.id }}">{{ b.kode }} - {{ b.nama }} (Stok: {{ b.stok }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Jumlah *</label>
+                    <input type="number" name="jumlah" placeholder="0" min="1" required>
+                </div>
+                <div class="form-group">
+                    <label>Keterangan</label>
+                    <input type="text" name="keterangan" placeholder="Contoh: Beli dari supplier X">
+                </div>
+                <button type="submit" class="btn btn-success btn-block">📥 Catat Masuk</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Barang Keluar -->
+    <div class="card">
+        <div class="card-header card-header-red">
+            <h3>📦 Barang Keluar</h3>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('stok_keluar') }}">
+                <div class="form-group">
+                    <label>Barang *</label>
+                    <select name="barang_id" required>
+                        <option value="">-- Pilih Barang --</option>
+                        {% for b in barang %}
+                        <option value="{{ b.id }}">{{ b.kode }} - {{ b.nama }} (Stok: {{ b.stok }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Jumlah *</label>
+                    <input type="number" name="jumlah" placeholder="0" min="1" required>
+                </div>
+                <div class="form-group">
+                    <label>Keterangan</label>
+                    <input type="text" name="keterangan" placeholder="Contoh: Penjualan ke pelanggan">
+                </div>
+                <button type="submit" class="btn btn-danger btn-block">📦 Catat Keluar</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Riwayat Stok -->
+<div class="card" style="margin-top:20px;">
+    <div class="card-header">
+        <h3>📋 Riwayat Stok (50 Terakhir)</h3>
+    </div>
+    <div class="card-body table-responsive">
+        {% if log %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Tanggal</th>
+                    <th>Waktu</th>
+                    <th>Kode</th>
+                    <th>Barang</th>
+                    <th>Jenis</th>
+                    <th>Jumlah</th>
+                    <th>Keterangan</th>
+                    <th>Oleh</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for l in log %}
+                <tr>
+                    <td>{{ l.tanggal }}</td>
+                    <td>{{ l.waktu }}</td>
+                    <td>{{ l.kode }}</td>
+                    <td>{{ l.nama_barang }}</td>
+                    <td>
+                        <span class="badge {% if l.jenis == 'masuk' %}badge-success{% else %}badge-danger{% endif %}">
+                            {{ l.jenis|upper }}
+                        </span>
+                    </td>
+                    <td>{{ l.jumlah }}</td>
+                    <td>{{ l.keterangan or '-' }}</td>
+                    <td>{{ l.username or '-' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="text-muted text-center">Belum ada riwayat stok</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
