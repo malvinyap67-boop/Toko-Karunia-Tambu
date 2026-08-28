@@ -166,6 +166,15 @@ def init_db():
                 logo TEXT
             )
         """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS login_log (
+                id SERIAL PRIMARY KEY,
+                username TEXT,
+                ip TEXT,
+                status TEXT,
+                waktu TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
 
         cur.execute("SELECT id FROM users WHERE username = 'admin'")
         if not cur.fetchone():
@@ -245,6 +254,13 @@ def init_db():
                 telepon TEXT,
                 logo TEXT
             );
+            CREATE TABLE IF NOT EXISTS login_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT,
+                ip TEXT,
+                status TEXT,
+                waktu TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
         """)
 
         cursor = db.execute("SELECT id FROM users WHERE username = 'admin'")
@@ -303,12 +319,12 @@ def index():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form['username']
+        username = request.form['username'].strip()
         password = request.form['password']
 
         db = get_db()
         user = db.execute(
-            q("SELECT * FROM users WHERE username = ?"),
+            q("SELECT * FROM users WHERE lower(username) = lower(?)"),
             (username,)
         ).fetchone()
 
@@ -317,9 +333,19 @@ def login():
             session['username'] = user['username']
             session['role'] = user['role']
             session['nama_lengkap'] = user['nama_lengkap']
+            db.execute(
+                q("INSERT INTO login_log (username, ip, status) VALUES (?, ?, 'sukses')"),
+                (username, request.remote_addr)
+            )
+            db.commit()
             flash(f'Selamat datang, {user["nama_lengkap"] or user["username"]}!', 'success')
             return redirect(url_for('dashboard'))
         else:
+            db.execute(
+                q("INSERT INTO login_log (username, ip, status) VALUES (?, ?, 'gagal')"),
+                (username, request.remote_addr)
+            )
+            db.commit()
             flash('Username atau password salah', 'danger')
 
     return render_template('login.html')
@@ -739,8 +765,9 @@ def pengaturan_page():
 
     pengaturan = db.execute(q("SELECT * FROM pengaturan LIMIT 1")).fetchone()
     users = db.execute(q("SELECT * FROM users ORDER BY id")).fetchall()
+    login_log = db.execute(q("SELECT * FROM login_log ORDER BY id DESC LIMIT 30")).fetchall()
 
-    return render_template('pengaturan.html', pengaturan=pengaturan, users=users)
+    return render_template('pengaturan.html', pengaturan=pengaturan, users=users, login_log=login_log)
 
 
 @app.route('/pengaturan/tambah-user', methods=['POST'])
