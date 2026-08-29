@@ -247,6 +247,24 @@ def init_db():
         except Exception:
             pass
 
+        # Bersihkan nota usang yang transaksinya sudah dihapus
+        cur.execute("""
+            DELETE FROM nota_item WHERE nota_id IN (
+                SELECT n.id FROM nota n WHERE NOT EXISTS (
+                    SELECT 1 FROM transaksi t WHERE t.keterangan LIKE '%' || n.no_nota || '%'
+                )
+            )
+        """)
+        cur.execute("""
+            DELETE FROM stok_log WHERE jenis = 'keluar' AND keterangan LIKE 'Penjualan nota %'
+            AND substr(keterangan, 16) NOT IN (SELECT no_nota FROM nota)
+        """)
+        cur.execute("""
+            DELETE FROM nota WHERE NOT EXISTS (
+                SELECT 1 FROM transaksi t WHERE t.keterangan LIKE '%' || nota.no_nota || '%'
+            )
+        """)
+
         cur.close()
         db.close()
     else:
@@ -382,6 +400,24 @@ def init_db():
             db.execute("ALTER TABLE barang ADD COLUMN foto TEXT DEFAULT ''")
         if 'stok_min' not in cols:
             db.execute("ALTER TABLE barang ADD COLUMN stok_min INTEGER DEFAULT 5")
+
+        # Bersihkan nota usang yang transaksinya sudah dihapus
+        db.execute("""
+            DELETE FROM nota_item WHERE nota_id IN (
+                SELECT n.id FROM nota n WHERE NOT EXISTS (
+                    SELECT 1 FROM transaksi t WHERE t.keterangan LIKE '%' || n.no_nota || '%'
+                )
+            )
+        """)
+        db.execute("""
+            DELETE FROM stok_log WHERE jenis = 'keluar' AND keterangan LIKE 'Penjualan nota %'
+            AND substr(keterangan, 16) NOT IN (SELECT no_nota FROM nota)
+        """)
+        db.execute("""
+            DELETE FROM nota WHERE NOT EXISTS (
+                SELECT 1 FROM transaksi t WHERE t.keterangan LIKE '%' || nota.no_nota || '%'
+            )
+        """)
 
         db.commit()
         db.close()
@@ -869,6 +905,25 @@ def keuangan_hapus(id):
         return redirect(url_for('keuangan_page'))
 
     db = get_db()
+    t = db.execute(q("SELECT * FROM transaksi WHERE id = ?"), (id,)).fetchone()
+    if not t:
+        flash('Transaksi tidak ditemukan', 'danger')
+        return redirect(url_for('keuangan_page'))
+
+    # Jika transaksi berasal dari nota penjualan, hapus sekalian nota,
+    # item nota, dan riwayat stoknya — serta kembalikan stok barang.
+    m = re.search(r'nota (INV-[\d-]+)', t['keterangan'] or '')
+    if m:
+        no_nota = m.group(1)
+        nota = db.execute(q("SELECT id FROM nota WHERE no_nota = ?"), (no_nota,)).fetchone()
+        if nota:
+            items = db.execute(q("SELECT barang_id, qty FROM nota_item WHERE nota_id = ? AND barang_id IS NOT NULL"), (nota['id'],)).fetchall()
+            for it in items:
+                db.execute(q("UPDATE barang SET stok = stok + ? WHERE id = ?"), (it['qty'], it['barang_id']))
+                db.execute(q("DELETE FROM stok_log WHERE barang_id = ? AND keterangan LIKE ?"), (it['barang_id'], f'%{no_nota}%'))
+            db.execute(q("DELETE FROM nota_item WHERE nota_id = ?"), (nota['id'],))
+            db.execute(q("DELETE FROM nota WHERE id = ?"), (nota['id'],))
+
     db.execute(q("DELETE FROM transaksi WHERE id = ?"), (id,))
     db.commit()
     flash('Transaksi berhasil dihapus', 'success')
