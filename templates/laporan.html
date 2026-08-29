@@ -34,6 +34,46 @@
 </div>
 
 <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+    <!-- Laba per Barang -->
+    <div class="bg-card rounded-xl shadow-sm p-6 self-start">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-bold flex items-center gap-2">
+                <span class="material-symbols-outlined text-brand">trending_up</span>Laba per Barang ({{ bulan }})
+            </h2>
+            <span class="text-sm font-bold text-green-700">Total laba: {{ total_laba_bulan|rupiah }}</span>
+        </div>
+        <div class="overflow-x-auto thin-scroll">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="text-[10px] uppercase tracking-wider text-ink-variant border-b border-outline-variant/40">
+                        <th class="text-left py-2 font-bold">Barang</th>
+                        <th class="text-center py-2 font-bold">Terjual</th>
+                        <th class="text-right py-2 font-bold">Omzet</th>
+                        <th class="text-right py-2 font-bold">HPP</th>
+                        <th class="text-right py-2 font-bold">Laba</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for b in barang_laba %}
+                    <tr class="border-b border-outline-variant/30">
+                        <td class="py-2.5">
+                            <span class="font-semibold">{{ b.nama }}</span>
+                            <span class="block text-[10px] text-ink-variant">{{ b.kode }}</span>
+                        </td>
+                        <td class="py-2.5 text-center font-bold">{{ b.qty }}</td>
+                        <td class="py-2.5 text-right text-ink-variant">{{ b.omzet|rupiah }}</td>
+                        <td class="py-2.5 text-right text-ink-variant">{{ b.hpp|rupiah }}</td>
+                        <td class="py-2.5 text-right font-bold {% if b.laba >= 0 %}text-green-700{% else %}text-error{% endif %}">{{ b.laba|rupiah }}</td>
+                    </tr>
+                    {% else %}
+                    <tr><td colspan="5" class="py-8 text-center text-ink-variant/60">Belum ada penjualan bulan ini</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <p class="text-[10px] text-ink-variant mt-3">HPP = harga pokok penjualan (harga beli saat ini × jumlah terjual). Laba akurat selama harga beli tidak berubah.</p>
+    </div>
+
     <!-- Barang Terlaris -->
     <div class="bg-card rounded-xl shadow-sm p-6 self-start">
         <h2 class="text-lg font-bold flex items-center gap-2 mb-4">

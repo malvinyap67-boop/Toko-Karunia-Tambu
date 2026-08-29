@@ -97,7 +97,7 @@
                         <span class="inline-block text-[10px] font-bold rounded-full px-2.5 py-1 bg-brand-fixed/40 text-brand">{{ b.nama_kategori or '-' }}</span>
                     </td>
                     <td class="px-5 py-3.5 text-center">
-                        <span class="font-bold {% if b.stok == 0 %}text-error{% elif b.stok <= 5 %}text-amber-600{% else %}text-ink{% endif %}">
+                        <span class="font-bold {% if b.stok == 0 %}text-error{% elif b.stok <= (b.stok_min if b.stok_min is not none else 5) %}text-amber-600{% else %}text-ink{% endif %}">
                             {% if b.stok <= 5 %}<span class="material-symbols-outlined text-[14px] align-middle text-error">warning</span>{% endif %}
                             {{ b.stok }} {{ b.satuan }}
                         </span>
@@ -107,7 +107,7 @@
                     {% endif %}
                     <td class="px-5 py-3.5 text-right font-bold">{{ b.harga_jual|rupiah }}</td>
                     <td class="px-5 py-3.5 text-right whitespace-nowrap">
-                        <button onclick='editBarang({{ b.id }}, {{ b.nama|tojson }}, {{ b.kategori_id or 0 }}, {{ b.harga_beli }}, {{ b.harga_jual }}, {{ b.stok }}, {{ b.satuan|tojson }}, {{ (b.foto or '')|tojson }})'
+                        <button onclick='editBarang({{ b.id }}, {{ b.nama|tojson }}, {{ b.kategori_id or 0 }}, {{ b.harga_beli }}, {{ b.harga_jual }}, {{ b.stok }}, {{ b.satuan|tojson }}, {{ (b.foto or '')|tojson }}, {{ b.stok_min if b.stok_min is not none else 5 }})'
                                 class="inline-flex p-2 rounded-lg text-ink-variant hover:bg-brand-fixed hover:text-brand transition-colors" title="Edit">
                             <span class="material-symbols-outlined text-[18px]">edit</span>
                         </button>
@@ -196,6 +196,10 @@
                     <input type="number" name="stok" id="edit_stok" min="0" class="w-full px-3 py-2.5 bg-surface border border-outline-variant/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/40">
                 </div>
                 <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-wider text-ink-variant mb-1.5">Stok Minimum</label>
+                    <input type="number" name="stok_min" id="edit_stok_min" min="0" value="5" class="w-full px-3 py-2.5 bg-surface border border-outline-variant/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/40">
+                </div>
+                <div>
                     <label class="block text-[10px] font-bold uppercase tracking-wider text-ink-variant mb-1.5">Foto Barang</label>
                     <div class="flex items-center gap-3">
                         <img id="edit_foto_preview" src="" alt="" class="w-12 h-12 rounded-lg object-cover border border-outline-variant/40 hidden">
@@ -217,7 +221,7 @@
 
 {% block scripts %}
 <script>
-function editBarang(id, nama, kategoriId, hargaBeli, hargaJual, stok, satuan, foto) {
+function editBarang(id, nama, kategoriId, hargaBeli, hargaJual, stok, satuan, foto, stokMin) {
     document.getElementById('editForm').action = '/barang/edit/' + id;
     document.getElementById('edit_nama').value = nama;
     document.getElementById('edit_kategori').value = kategoriId || '';
@@ -225,6 +229,7 @@ function editBarang(id, nama, kategoriId, hargaBeli, hargaJual, stok, satuan, fo
     document.getElementById('edit_harga_jual').value = hargaJual;
     document.getElementById('edit_stok').value = stok;
     document.getElementById('edit_satuan').value = satuan;
+    document.getElementById('edit_stok_min').value = (stokMin === null || stokMin === undefined) ? 5 : stokMin;
     document.getElementById('edit_foto').value = '';
     var preview = document.getElementById('edit_foto_preview');
     var kosong = document.getElementById('edit_foto_kosong');

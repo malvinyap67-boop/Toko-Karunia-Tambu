@@ -4,7 +4,7 @@ import sqlite3
 import hashlib
 import secrets
 import re
-from datetime import datetime, date
+from datetime import datetime, date, timedelta, timezone
 from functools import wraps
 from flask import (
     Flask, render_template, request, redirect, url_for,
@@ -242,6 +242,10 @@ def init_db():
             cur.execute("ALTER TABLE barang ADD COLUMN foto TEXT DEFAULT ''")
         except Exception:
             pass
+        try:
+            cur.execute("ALTER TABLE barang ADD COLUMN stok_min INTEGER DEFAULT 5")
+        except Exception:
+            pass
 
         cur.close()
         db.close()
@@ -376,6 +380,8 @@ def init_db():
         cols = [r[1] for r in db.execute("PRAGMA table_info(barang)").fetchall()]
         if 'foto' not in cols:
             db.execute("ALTER TABLE barang ADD COLUMN foto TEXT DEFAULT ''")
+        if 'stok_min' not in cols:
+            db.execute("ALTER TABLE barang ADD COLUMN stok_min INTEGER DEFAULT 5")
 
         db.commit()
         db.close()
@@ -413,6 +419,22 @@ def rupiah(value):
     if value == int(value):
         value = int(value)
     return f"Rp {value:,.0f}".replace(',', '.')
+
+
+# ─── Waktu WIB ───────────────────────────────────────────────────────────────
+# Server (mis. PythonAnywhere) memakai UTC, jadi tanggal/waktu dicatat eksplisit
+# mengikuti WIB agar "hari ini" berganti pukul 00.00 waktu Indonesia.
+
+WIB = timezone(timedelta(hours=7))
+
+
+def sekarang_wib():
+    n = datetime.now(WIB)
+    return n.date().isoformat(), n.strftime('%H:%M:%S')
+
+
+def hari_ini_wib():
+    return datetime.now(WIB).date().isoformat()
 
 
 # ─── Routes: Auth ────────────────────────────────────────────────────────────
@@ -467,7 +489,7 @@ def dashboard():
     total_stok = db.execute(q("SELECT COALESCE(SUM(stok), 0) FROM barang")).fetchone()[0]
     stok_habis = db.execute(q("SELECT COUNT(*) FROM barang WHERE stok = 0")).fetchone()[0]
 
-    today = date.today().isoformat()
+    today = hari_ini_wib()
     pemasukan_hari = db.execute(
         q("SELECT COALESCE(SUM(jumlah), 0) FROM transaksi WHERE jenis='pemasukan' AND tanggal=?"),
         (today,)
@@ -477,7 +499,7 @@ def dashboard():
         (today,)
     ).fetchone()[0]
 
-    bulan = datetime.now().strftime('%Y-%m')
+    bulan = datetime.now(WIB).strftime('%Y-%m')
     pemasukan_bulan = db.execute(
         q("SELECT COALESCE(SUM(jumlah), 0) FROM transaksi WHERE jenis='pemasukan' AND strftime('%Y-%m', tanggal)=?"),
         (bulan,)
@@ -487,9 +509,9 @@ def dashboard():
         (bulan,)
     ).fetchone()[0]
 
-    barang_stok_rendah = db.execute(
-        q("SELECT * FROM barang WHERE stok <= 5 ORDER BY stok ASC LIMIT 5")
-    ).fetchall()
+    barang_stok_rendah = db.execute(q("""
+        SELECT * FROM barang WHERE stok <= COALESCE(stok_min, 5) ORDER BY (stok - COALESCE(stok_min, 5)) ASC LIMIT 5
+    """)).fetchall()
 
     transaksi_terakhir = db.execute(q("""
         SELECT * FROM transaksi
@@ -553,7 +575,7 @@ def barang_list():
     barang = db.execute(q(query), params).fetchall()
     kategori = db.execute(q("SELECT * FROM kategori ORDER BY nama")).fetchall()
     satuan = db.execute(q("SELECT * FROM satuan ORDER BY nama")).fetchall()
-    stok_menipis = db.execute(q("SELECT COUNT(*) FROM barang WHERE stok <= 5")).fetchone()[0]
+    stok_menipis = db.execute(q("SELECT COUNT(*) FROM barang WHERE stok <= COALESCE(stok_min, 5)")).fetchone()[0]
     kategori_aktif = db.execute(q("SELECT COUNT(DISTINCT kategori_id) FROM barang WHERE kategori_id IS NOT NULL")).fetchone()[0]
 
     return render_template('barang.html', barang=barang, kategori=kategori, satuan=satuan,
@@ -590,6 +612,7 @@ def barang_input():
         harga_jual = request.form.get('harga_jual', '0') or 0
         stok = request.form.get('stok', '0') or 0
         satuan = request.form.get('satuan', 'pcs')
+        stok_min = request.form.get('stok_min', '5') or 5
         foto = simpan_foto(request.files.get('foto'))
 
         if not kode or not nama:
@@ -601,8 +624,8 @@ def barang_input():
             return redirect(url_for('barang_input'))
 
         db.execute(
-            q("INSERT INTO barang (kode, nama, kategori_id, harga_beli, harga_jual, stok, satuan, foto) VALUES (?,?,?,?,?,?,?,?)"),
-            (kode, nama, kategori_id, float(harga_beli), float(harga_jual), int(stok), satuan, foto)
+            q("INSERT INTO barang (kode, nama, kategori_id, harga_beli, harga_jual, stok, satuan, foto, stok_min) VALUES (?,?,?,?,?,?,?,?,?)"),
+            (kode, nama, kategori_id, float(harga_beli), float(harga_jual), int(stok), satuan, foto, int(stok_min))
         )
         db.commit()
         flash(f'Barang "{nama}" berhasil ditambahkan', 'success')
@@ -623,17 +646,18 @@ def barang_edit(id):
     harga_jual = request.form.get('harga_jual', '0') or 0
     stok = request.form.get('stok', '0') or 0
     satuan = request.form.get('satuan', 'pcs')
+    stok_min = request.form.get('stok_min', '5') or 5
 
     foto = simpan_foto(request.files.get('foto'))
     if foto:
         db.execute(
-            q("UPDATE barang SET nama=?, kategori_id=?, harga_beli=?, harga_jual=?, stok=?, satuan=?, foto=? WHERE id=?"),
-            (nama, kategori_id, float(harga_beli), float(harga_jual), int(stok), satuan, foto, id)
+            q("UPDATE barang SET nama=?, kategori_id=?, harga_beli=?, harga_jual=?, stok=?, satuan=?, foto=?, stok_min=? WHERE id=?"),
+            (nama, kategori_id, float(harga_beli), float(harga_jual), int(stok), satuan, foto, int(stok_min), id)
         )
     else:
         db.execute(
-            q("UPDATE barang SET nama=?, kategori_id=?, harga_beli=?, harga_jual=?, stok=?, satuan=? WHERE id=?"),
-            (nama, kategori_id, float(harga_beli), float(harga_jual), int(stok), satuan, id)
+            q("UPDATE barang SET nama=?, kategori_id=?, harga_beli=?, harga_jual=?, stok=?, satuan=?, stok_min=? WHERE id=?"),
+            (nama, kategori_id, float(harga_beli), float(harga_jual), int(stok), satuan, int(stok_min), id)
         )
     db.commit()
     flash('Barang berhasil diupdate', 'success')
@@ -722,9 +746,10 @@ def stok_masuk():
         return redirect(url_for('stok_page'))
 
     db.execute(q("UPDATE barang SET stok = stok + ? WHERE id = ?"), (jumlah, barang_id))
+    tanggal, waktu = sekarang_wib()
     db.execute(
-        q("INSERT INTO stok_log (barang_id, jenis, jumlah, keterangan, user_id) VALUES (?, 'masuk', ?, ?, ?)"),
-        (barang_id, jumlah, keterangan, session['user_id'])
+        q("INSERT INTO stok_log (barang_id, jenis, jumlah, keterangan, tanggal, waktu, user_id) VALUES (?, 'masuk', ?, ?, ?, ?, ?)"),
+        (barang_id, jumlah, keterangan, tanggal, waktu, session['user_id'])
     )
     db.commit()
     flash('Barang masuk berhasil dicatat', 'success')
@@ -753,9 +778,10 @@ def stok_keluar():
         return redirect(url_for('stok_page'))
 
     db.execute(q("UPDATE barang SET stok = stok - ? WHERE id = ?"), (jumlah, barang_id))
+    tanggal, waktu = sekarang_wib()
     db.execute(
-        q("INSERT INTO stok_log (barang_id, jenis, jumlah, keterangan, user_id) VALUES (?, 'keluar', ?, ?, ?)"),
-        (barang_id, jumlah, keterangan, session['user_id'])
+        q("INSERT INTO stok_log (barang_id, jenis, jumlah, keterangan, tanggal, waktu, user_id) VALUES (?, 'keluar', ?, ?, ?, ?, ?)"),
+        (barang_id, jumlah, keterangan, tanggal, waktu, session['user_id'])
     )
     db.commit()
     flash('Barang keluar berhasil dicatat', 'success')
@@ -768,7 +794,7 @@ def stok_keluar():
 @login_required
 def keuangan_page():
     db = get_db()
-    bulan = request.args.get('bulan', datetime.now().strftime('%Y-%m'))
+    bulan = request.args.get('bulan', datetime.now(WIB).strftime('%Y-%m'))
     jenis_filter = request.args.get('jenis', '')
 
     query = "SELECT * FROM transaksi WHERE strftime('%Y-%m', tanggal) = ?"
@@ -825,8 +851,8 @@ def keuangan_tambah():
         return redirect(url_for('keuangan_page'))
 
     db.execute(
-        q("INSERT INTO transaksi (jenis, jumlah, keterangan, user_id) VALUES (?, ?, ?, ?)"),
-        (jenis, jumlah, keterangan, session['user_id'])
+        q("INSERT INTO transaksi (jenis, jumlah, keterangan, tanggal, waktu, user_id) VALUES (?, ?, ?, ?, ?, ?)"),
+        (jenis, jumlah, keterangan, *sekarang_wib(), session['user_id'])
     )
     db.commit()
     flash(f'{jenis.capitalize()} berhasil dicatat', 'success')
@@ -855,7 +881,7 @@ def keuangan_hapus(id):
 @login_required
 def laporan_page():
     db = get_db()
-    bulan = request.args.get('bulan', datetime.now().strftime('%Y-%m'))
+    bulan = request.args.get('bulan', datetime.now(WIB).strftime('%Y-%m'))
 
     total_pemasukan = db.execute(
         q("SELECT COALESCE(SUM(jumlah), 0) FROM transaksi WHERE jenis='pemasukan' AND strftime('%Y-%m', tanggal)=?"),
@@ -870,13 +896,38 @@ def laporan_page():
     laba_bersih = total_pemasukan - total_pengeluaran
 
     barang_terjual = db.execute(q("""
-        SELECT b.nama, b.kode, SUM(s.jumlah) as total
+        SELECT b.nama, b.kode, SUM(s.jumlah) as total,
+               COALESCE(b.harga_beli, 0) as harga_beli
         FROM stok_log s
         JOIN barang b ON s.barang_id = b.id
         WHERE s.jenis = 'keluar' AND strftime('%Y-%m', s.tanggal) = ?
         GROUP BY b.id
         ORDER BY total DESC
     """), (bulan,)).fetchall()
+
+    # Laba per barang bulan ini: omzet nota dikurangi harga beli (hpp) saat ini
+    laba_rows = db.execute(q("""
+        SELECT ni.barang_id, COALESCE(b.nama, ni.nama_barang) as nama, COALESCE(b.kode, '-') as kode,
+               SUM(ni.qty) as qty, SUM(ni.subtotal) as omzet,
+               SUM(ni.qty * COALESCE(b.harga_beli, 0)) as hpp
+        FROM nota_item ni
+        JOIN nota n ON ni.nota_id = n.id
+        LEFT JOIN barang b ON ni.barang_id = b.id
+        WHERE strftime('%Y-%m', n.tanggal) = ?
+        GROUP BY ni.barang_id, ni.nama_barang
+        ORDER BY omzet DESC
+    """), (bulan,)).fetchall()
+
+    barang_laba = []
+    total_laba_bulan = 0
+    for r in laba_rows:
+        laba = r['omzet'] - r['hpp']
+        total_laba_bulan += laba
+        barang_laba.append({
+            'nama': r['nama'], 'kode': r['kode'], 'qty': r['qty'],
+            'omzet': r['omzet'], 'hpp': r['hpp'], 'laba': laba,
+            'laba_unit': r['omzet'] / r['qty'] - (r['hpp'] / r['qty'] if r['qty'] else 0) if r['qty'] else 0
+        })
 
     barang_terlaris = db.execute(q("""
         SELECT b.nama, b.kode, SUM(s.jumlah) as total
@@ -888,7 +939,7 @@ def laporan_page():
     """), (bulan,)).fetchall()
 
     stok_saat_ini = db.execute(q("""
-        SELECT b.nama, b.kode, b.stok, b.satuan, k.nama as kategori
+        SELECT b.nama, b.kode, b.stok, b.satuan, b.stok_min, k.nama as kategori
         FROM barang b
         LEFT JOIN kategori k ON b.kategori_id = k.id
         ORDER BY b.stok ASC
@@ -898,7 +949,8 @@ def laporan_page():
         bulan=bulan, total_pemasukan=total_pemasukan,
         total_pengeluaran=total_pengeluaran, laba_bersih=laba_bersih,
         barang_terjual=barang_terjual, barang_terlaris=barang_terlaris,
-        stok_saat_ini=stok_saat_ini
+        stok_saat_ini=stok_saat_ini, barang_laba=barang_laba,
+        total_laba_bulan=total_laba_bulan
     )
 
 
@@ -962,7 +1014,7 @@ def tambah_user():
 # ─── Routes: Nota / Penjualan ───────────────────────────────────────────────
 
 def buat_no_nota(db):
-    today = date.today().strftime('%Y%m%d')
+    today = datetime.now(WIB).strftime('%Y%m%d')
     row = db.execute(q("SELECT COUNT(*) FROM nota WHERE no_nota LIKE ?"), (f'INV-{today}-%',)).fetchone()[0]
     return f"INV-{today}-{row + 1:03d}"
 
@@ -1029,10 +1081,11 @@ def nota_simpan():
 
     total_akhir = max(0, total - diskon)
     no_nota = buat_no_nota(db)
+    tanggal, waktu = sekarang_wib()
 
     db.execute(
-        q("INSERT INTO nota (no_nota, pelanggan, total, diskon, metode, status, user_id) VALUES (?,?,?,?,?,?,?)"),
-        (no_nota, pelanggan, total_akhir, diskon, metode, status, session['user_id'])
+        q("INSERT INTO nota (no_nota, pelanggan, total, diskon, metode, status, tanggal, waktu, user_id) VALUES (?,?,?,?,?,?,?,?,?)"),
+        (no_nota, pelanggan, total_akhir, diskon, metode, status, tanggal, waktu, session['user_id'])
     )
     nota_id = db.execute(q("SELECT id FROM nota WHERE no_nota = ?"), (no_nota,)).fetchone()[0]
 
@@ -1043,13 +1096,13 @@ def nota_simpan():
         )
         db.execute(q("UPDATE barang SET stok = stok - ? WHERE id = ?"), (qty, b['id']))
         db.execute(
-            q("INSERT INTO stok_log (barang_id, jenis, jumlah, keterangan, user_id) VALUES (?, 'keluar', ?, ?, ?)"),
-            (b['id'], qty, f'Penjualan nota {no_nota}', session['user_id'])
+            q("INSERT INTO stok_log (barang_id, jenis, jumlah, keterangan, tanggal, waktu, user_id) VALUES (?, 'keluar', ?, ?, ?, ?, ?)"),
+            (b['id'], qty, f'Penjualan nota {no_nota}', tanggal, waktu, session['user_id'])
         )
 
     db.execute(
-        q("INSERT INTO transaksi (jenis, jumlah, keterangan, user_id) VALUES ('pemasukan', ?, ?, ?)"),
-        (total_akhir, f'Penjualan nota {no_nota} - {pelanggan}', session['user_id'])
+        q("INSERT INTO transaksi (jenis, jumlah, keterangan, tanggal, waktu, user_id) VALUES ('pemasukan', ?, ?, ?, ?, ?)"),
+        (total_akhir, f'Penjualan nota {no_nota} - {pelanggan}', tanggal, waktu, session['user_id'])
     )
     db.commit()
     return redirect(url_for('nota_cetak', id=nota_id))
@@ -1095,9 +1148,10 @@ def nota_lunas(id):
         flash('Nota tidak ditemukan atau sudah lunas', 'danger')
         return redirect(url_for('nota_daftar'))
     db.execute(q("UPDATE nota SET status = 'lunas' WHERE id = ?"), (id,))
+    tanggal, waktu = sekarang_wib()
     db.execute(
-        q("INSERT INTO transaksi (jenis, jumlah, keterangan, user_id) VALUES ('pemasukan', ?, ?, ?)"),
-        (nota['total'], f'Pelunasan nota {nota["no_nota"]} - {nota["pelanggan"]}', session['user_id'])
+        q("INSERT INTO transaksi (jenis, jumlah, keterangan, tanggal, waktu, user_id) VALUES ('pemasukan', ?, ?, ?, ?, ?)"),
+        (nota['total'], f'Pelunasan nota {nota["no_nota"]} - {nota["pelanggan"]}', tanggal, waktu, session['user_id'])
     )
     db.commit()
     flash(f'Nota {nota["no_nota"]} ditandai lunas', 'success')
@@ -1159,15 +1213,16 @@ def pemesanan_terima(id):
         return redirect(url_for('pemesanan_page'))
 
     b = db.execute(q("SELECT * FROM barang WHERE id = ?"), (p['barang_id'],)).fetchone()
+    tanggal, waktu = sekarang_wib()
     db.execute(q("UPDATE barang SET stok = stok + ? WHERE id = ?"), (p['qty'], p['barang_id']))
     db.execute(
-        q("INSERT INTO stok_log (barang_id, jenis, jumlah, keterangan, user_id) VALUES (?, 'masuk', ?, ?, ?)"),
-        (p['barang_id'], p['qty'], f'Penerimaan pemesanan #{id} dari {p["supplier"] or "supplier"}', session['user_id'])
+        q("INSERT INTO stok_log (barang_id, jenis, jumlah, keterangan, tanggal, waktu, user_id) VALUES (?, 'masuk', ?, ?, ?, ?, ?)"),
+        (p['barang_id'], p['qty'], f'Penerimaan pemesanan #{id} dari {p["supplier"] or "supplier"}', tanggal, waktu, session['user_id'])
     )
     if p['catat_pengeluaran'] and b:
         db.execute(
-            q("INSERT INTO transaksi (jenis, jumlah, keterangan, user_id) VALUES ('pengeluaran', ?, ?, ?)"),
-            (b['harga_beli'] * p['qty'], f'Pembelian pemesanan #{id}: {b["nama"]} x{p["qty"]}', session['user_id'])
+            q("INSERT INTO transaksi (jenis, jumlah, keterangan, tanggal, waktu, user_id) VALUES ('pengeluaran', ?, ?, ?, ?, ?)"),
+            (b['harga_beli'] * p['qty'], f'Pembelian pemesanan #{id}: {b["nama"]} x{p["qty"]}', tanggal, waktu, session['user_id'])
         )
     db.execute(q("UPDATE pemesanan SET status = 'diterima' WHERE id = ?"), (id,))
     db.commit()

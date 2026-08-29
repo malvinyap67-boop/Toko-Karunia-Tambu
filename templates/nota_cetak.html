@@ -1,10 +1,12 @@
 {% extends 'base.html' %}
 {% block title %}Cetak Nota - Toko Karunia Tambu{% endblock %}
 {% block content %}
-<div class="max-w-md mx-auto">
-    <div id="area-cetak" class="bg-white border border-black p-6 text-black" style="font-family: 'Courier New', monospace;">
-        <div class="text-center border-b border-black pb-3 mb-3">
-            <h1 class="text-base font-bold uppercase tracking-wide">{{ pengaturan.nama_toko if pengaturan else 'Toko Karunia Tambu' }}</h1>
+{% set is_struk = request.args.get('struk') == '1' %}
+{% if is_struk %}<style>@page { size: 58mm auto; margin: 2mm; }</style>{% endif %}
+<div class="{% if is_struk %}max-w-[230px]{% else %}max-w-md{% endif %} mx-auto">
+    <div id="area-cetak" class="bg-white border border-black p-6 text-black {% if is_struk %}text-[10px] p-3{% endif %}" style="font-family: 'Courier New', monospace;">
+        <div class="text-center border-b border-black pb-3 mb-3 {% if is_struk %}pb-2 mb-2{% endif %}">
+            <h1 class="{% if is_struk %}text-xs{% else %}text-base{% endif %} font-bold uppercase tracking-wide">{{ pengaturan.nama_toko if pengaturan else 'Toko Karunia Tambu' }}</h1>
             {% if pengaturan and pengaturan.alamat %}<p class="text-xs">{{ pengaturan.alamat }}</p>{% endif %}
             {% if pengaturan and pengaturan.telepon %}<p class="text-xs">Telp: {{ pengaturan.telepon }}</p>{% endif %}
         </div>
@@ -60,6 +62,11 @@
         <button onclick="window.print()" class="flex items-center gap-2 bg-brand hover:bg-brand-light text-white px-6 py-3 rounded-lg text-sm font-bold uppercase transition-colors shadow-md shadow-brand/30">
             <span class="material-symbols-outlined text-[18px]">print</span>Cetak Nota
         </button>
+        {% if not is_struk %}
+        <button onclick="window.location='?struk=1'" class="flex items-center gap-2 bg-surface hover:bg-outline-variant/30 text-ink-variant px-5 py-3 rounded-lg text-sm font-bold uppercase transition-colors border border-outline-variant/60">
+            <span class="material-symbols-outlined text-[18px]">point_of_sale</span>Struk 58mm
+        </button>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
