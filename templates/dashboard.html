@@ -97,8 +97,8 @@
 <!-- Aktivitas Terakhir -->
 <div class="bg-card rounded-xl shadow-sm p-6 mt-4">
     <div class="flex items-center justify-between mb-4">
-        <h2 class="font-bold">Aktivitas Stok Terakhir</h2>
-        <a href="{{ url_for('stok_page') }}" class="text-xs text-brand font-semibold hover:underline">Lihat Semua</a>
+        <h2 class="font-bold">Transaksi Terbaru</h2>
+        <a href="{{ url_for('keuangan_page') }}" class="text-xs text-brand font-semibold hover:underline">Lihat Semua</a>
     </div>
     <div class="overflow-x-auto thin-scroll">
         <table class="w-full text-sm min-w-[560px]">
@@ -112,7 +112,8 @@
             </thead>
             <tbody>
                 {% for t in transaksi_terakhir %}
-                <tr class="border-b border-outline-variant/30">
+                <tr class="border-b border-outline-variant/30 hover:bg-surface/60 transition-colors cursor-pointer"
+                    onclick="window.location='{{ url_for('keuangan_page', bulan=t.tanggal[:7]) }}'">
                     <td class="py-2.5 text-ink-variant">{{ t.tanggal }}</td>
                     <td class="py-2.5 font-semibold">{{ t.nama_barang }}</td>
                     <td class="py-2.5 text-center">
