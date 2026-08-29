@@ -492,10 +492,8 @@ def dashboard():
     ).fetchall()
 
     transaksi_terakhir = db.execute(q("""
-        SELECT s.*, b.nama as nama_barang, b.kode
-        FROM stok_log s
-        JOIN barang b ON s.barang_id = b.id
-        ORDER BY s.id DESC LIMIT 5
+        SELECT * FROM transaksi
+        ORDER BY id DESC LIMIT 5
     """)).fetchall()
 
     pengaturan = db.execute(q("SELECT * FROM pengaturan LIMIT 1")).fetchone()

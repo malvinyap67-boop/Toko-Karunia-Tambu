@@ -54,7 +54,7 @@
         </div>
     </div>
 
-    <a href="{{ url_for('nota_buat') }}" class="relative overflow-hidden bg-brand text-white p-6 rounded-xl shadow-md group transition-all hover:shadow-lg">
+    <a href="{{ url_for('keuangan_page') }}" class="relative overflow-hidden bg-brand text-white p-6 rounded-xl shadow-md group transition-all hover:shadow-lg">
         <div class="absolute -right-12 -bottom-12 w-48 h-48 bg-white/10 rounded-full transition-transform group-hover:scale-110"></div>
         <div class="flex items-center justify-between relative">
             <span class="text-[11px] font-bold uppercase tracking-wider text-brand-dim">Transaksi Baru</span>
@@ -64,7 +64,7 @@
         </div>
         <div class="relative mt-4">
             <span class="text-2xl font-extrabold">{{ transaksi_nota_hari }}</span>
-            <span class="text-xs text-brand-dim mt-1 block">Hari ini — klik untuk buat nota</span>
+            <span class="text-xs text-brand-dim mt-1 block">Hari ini — klik untuk riwayat transaksi</span>
         </div>
     </a>
 </div>
@@ -105,7 +105,7 @@
             <thead>
                 <tr class="text-[10px] uppercase tracking-wider text-ink-variant border-b border-outline-variant/40">
                     <th class="text-left py-2 font-bold">Tanggal</th>
-                    <th class="text-left py-2 font-bold">Barang</th>
+                    <th class="text-left py-2 font-bold">Keterangan</th>
                     <th class="text-center py-2 font-bold">Jenis</th>
                     <th class="text-right py-2 font-bold">Jumlah</th>
                 </tr>
@@ -115,12 +115,12 @@
                 <tr class="border-b border-outline-variant/30 hover:bg-surface/60 transition-colors cursor-pointer"
                     onclick="window.location='{{ url_for('keuangan_page', bulan=t.tanggal[:7]) }}'">
                     <td class="py-2.5 text-ink-variant">{{ t.tanggal }}</td>
-                    <td class="py-2.5 font-semibold">{{ t.nama_barang }}</td>
+                    <td class="py-2.5 font-semibold">{{ t.keterangan or '-' }}</td>
                     <td class="py-2.5 text-center">
                         <span class="inline-block text-[10px] font-bold uppercase rounded-full px-2.5 py-1
-                             {% if t.jenis == 'masuk' %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">{{ t.jenis }}</span>
+                             {% if t.jenis == 'pemasukan' %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">{{ t.jenis }}</span>
                     </td>
-                    <td class="py-2.5 text-right font-bold">{{ t.jumlah }}</td>
+                    <td class="py-2.5 text-right font-bold {% if t.jenis == 'pemasukan' %}text-green-700{% else %}text-error{% endif %}">{{ t.jumlah|rupiah }}</td>
                 </tr>
                 {% else %}
                 <tr><td colspan="4" class="py-8 text-center text-ink-variant/60">Belum ada transaksi</td></tr>
