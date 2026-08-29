@@ -580,35 +580,39 @@ def simpan_foto(file_storage):
     return nama
 
 
-@app.route('/barang/tambah', methods=['POST'])
+@app.route('/barang/input', methods=['GET', 'POST'])
 @login_required
-def barang_tambah():
+def barang_input():
     db = get_db()
-    kode = request.form['kode'].strip()
-    nama = request.form['nama'].strip()
-    kategori_id = request.form['kategori_id'] or None
-    harga_beli = request.form.get('harga_beli', '0') or 0
-    harga_jual = request.form.get('harga_jual', '0') or 0
-    stok = request.form.get('stok', '0') or 0
-    satuan = request.form.get('satuan', 'pcs')
-    foto = simpan_foto(request.files.get('foto'))
+    if request.method == 'POST':
+        kode = request.form['kode'].strip()
+        nama = request.form['nama'].strip()
+        kategori_id = request.form['kategori_id'] or None
+        harga_beli = request.form.get('harga_beli', '0') or 0
+        harga_jual = request.form.get('harga_jual', '0') or 0
+        stok = request.form.get('stok', '0') or 0
+        satuan = request.form.get('satuan', 'pcs')
+        foto = simpan_foto(request.files.get('foto'))
 
-    if not kode or not nama:
-        flash('Kode dan nama barang wajib diisi', 'danger')
-        return redirect(url_for('barang_list'))
+        if not kode or not nama:
+            flash('Kode dan nama barang wajib diisi', 'danger')
+            return redirect(url_for('barang_input'))
 
-    existing = db.execute(q("SELECT id FROM barang WHERE kode = ?"), (kode,)).fetchone()
-    if existing:
-        flash(f'Kode barang "{kode}" sudah ada', 'danger')
-        return redirect(url_for('barang_list'))
+        if db.execute(q("SELECT id FROM barang WHERE kode = ?"), (kode,)).fetchone():
+            flash(f'Kode barang "{kode}" sudah ada', 'danger')
+            return redirect(url_for('barang_input'))
 
-    db.execute(
-        q("INSERT INTO barang (kode, nama, kategori_id, harga_beli, harga_jual, stok, satuan, foto) VALUES (?,?,?,?,?,?,?,?)"),
-        (kode, nama, kategori_id, float(harga_beli), float(harga_jual), int(stok), satuan, foto)
-    )
-    db.commit()
-    flash(f'Barang "{nama}" berhasil ditambahkan', 'success')
-    return redirect(url_for('barang_list'))
+        db.execute(
+            q("INSERT INTO barang (kode, nama, kategori_id, harga_beli, harga_jual, stok, satuan, foto) VALUES (?,?,?,?,?,?,?,?)"),
+            (kode, nama, kategori_id, float(harga_beli), float(harga_jual), int(stok), satuan, foto)
+        )
+        db.commit()
+        flash(f'Barang "{nama}" berhasil ditambahkan', 'success')
+        return redirect(url_for('barang_input'))
+
+    kategori = db.execute(q("SELECT * FROM kategori ORDER BY nama")).fetchall()
+    satuan = db.execute(q("SELECT * FROM satuan ORDER BY nama")).fetchall()
+    return render_template('barang_input.html', kategori=kategori, satuan=satuan)
 
 
 @app.route('/barang/edit/<int:id>', methods=['POST'])
