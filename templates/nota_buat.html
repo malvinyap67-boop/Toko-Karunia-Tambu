@@ -1,0 +1,295 @@
+{% extends 'base.html' %}
+{% block title %}Buat Nota - Toko Karunia Tambu{% endblock %}
+{% block content %}
+<div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+
+    <!-- Katalog Produk -->
+    <section class="bg-card rounded-xl shadow-sm p-6">
+        <div class="flex items-start justify-between mb-5">
+            <div>
+                <h1 class="text-3xl font-extrabold">Katalog Produk</h1>
+                <p class="text-sm text-ink-variant mt-1">Pilih item untuk ditambahkan ke nota.</p>
+            </div>
+            <div class="w-12 h-12 rounded-full bg-brand-fixed flex items-center justify-center text-brand shrink-0">
+                <span class="material-symbols-outlined">storefront</span>
+            </div>
+        </div>
+
+        <div class="relative mb-4">
+            <span class="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-variant text-[20px]">search</span>
+            <input type="text" id="cariBarang" placeholder="Cari kode atau nama barang..."
+                   class="w-full pl-10 pr-4 py-2.5 bg-surface border border-outline-variant/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/40">
+        </div>
+
+        <div id="filterKategori" class="flex flex-wrap gap-2 mb-5">
+            <button data-kat="0" class="chip-kat px-4 py-1.5 rounded-full text-xs font-bold transition-colors bg-brand text-white">Semua</button>
+            {% for k in kategori %}
+            <button data-kat="{{ k.id }}" class="chip-kat px-4 py-1.5 rounded-full text-xs font-bold transition-colors bg-surface text-ink-variant hover:bg-brand-fixed">{{ k.nama }}</button>
+            {% endfor %}
+        </div>
+
+        <div id="gridBarang" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 max-h-[560px] overflow-y-auto thin-scroll pr-1">
+            {% for b in barang %}
+            <button type="button" class="kartu-barang relative text-left bg-card border border-outline-variant/40 rounded-xl p-3 flex flex-col gap-2 hover:border-brand hover:shadow-md transition-all
+                     {% if b.stok <= 0 %}opacity-50{% endif %}"
+                    data-nama="{{ b.nama|lower }}" data-kode="{{ b.kode|lower }}" data-kategori="{{ b.kategori_id or 0 }}"
+                    data-id="{{ b.id }}" data-harga="{{ b.harga_jual }}" data-stok="{{ b.stok }}"
+                    {% if b.stok <= 0 %}disabled{% endif %}>
+                {% if b.stok <= 5 %}<span class="absolute top-1.5 right-1.5 text-[9px] font-bold bg-red-100 text-red-700 rounded px-1.5 py-0.5">SISA {{ b.stok }}</span>{% endif %}
+                <div class="h-20 rounded-lg bg-surface flex items-center justify-center overflow-hidden {% if not b.foto %}text-ink-variant/40{% endif %}">
+                    {% if b.foto %}
+                    <img src="{{ url_for('static', filename='uploads/' + b.foto) }}" alt="" class="w-full h-full object-cover">
+                    {% else %}
+                    <span class="material-symbols-outlined">package_2</span>
+                    {% endif %}
+                </div>
+                <div>
+                    <span class="text-[10px] font-bold text-ink-variant tracking-wider">{{ b.kode }}</span>
+                    <p class="text-sm font-semibold leading-tight line-clamp-2">{{ b.nama }}</p>
+                </div>
+                <div class="flex items-end justify-between mt-auto">
+                    <span class="text-xs font-bold text-brand">{{ b.harga_jual|rupiah }}</span>
+                    <span class="w-6 h-6 rounded-full bg-brand text-white flex items-center justify-center">
+                        <span class="material-symbols-outlined text-[16px]">add</span>
+                    </span>
+                </div>
+            </button>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- Detail Nota -->
+    <section class="bg-card rounded-xl shadow-sm flex flex-col self-start w-full">
+        <div class="p-6 border-b border-outline-variant/40">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-xl font-bold">Detail Pesanan</h2>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-wider text-ink-variant mb-1.5">Pelanggan</label>
+                    <input type="text" id="pelanggan" value="Umum" placeholder="Nama pembeli"
+                           class="w-full px-3 py-2.5 bg-surface border border-outline-variant/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/40">
+                    <p class="text-[10px] text-ink-variant mt-1">Isi nama pembeli, atau biarkan "Umum" jika tidak diketahui.</p>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-wider text-ink-variant mb-1.5">Metode Pembayaran</label>
+                    <select id="metode" name="metode" class="w-full px-3 py-2.5 bg-surface border border-outline-variant/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/40">
+                        <option value="tunai">Tunai</option>
+                        <option value="transfer">Transfer</option>
+                        <option value="qris">QRIS</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-6 min-h-[200px] max-h-[300px] overflow-y-auto thin-scroll">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="text-[10px] uppercase tracking-wider text-ink-variant border-b border-outline-variant/40">
+                        <th class="text-left pb-2 font-bold">Barang</th>
+                        <th class="text-center pb-2 font-bold">Harga</th>
+                        <th class="text-center pb-2 font-bold">Qty</th>
+                        <th class="text-right pb-2 font-bold">Subtotal</th>
+                        <th class="pb-2"></th>
+                    </tr>
+                </thead>
+                <tbody id="isiNota">
+                    <tr id="notaKosong">
+                        <td colspan="5" class="py-10 text-center text-ink-variant/60 text-sm">Belum ada barang. Pilih dari katalog.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <form id="formNota" method="POST" action="{{ url_for('nota_simpan') }}" class="p-6 border-t border-outline-variant/40 space-y-3">
+            <input type="hidden" name="items" id="inputItems">
+            <input type="hidden" name="pelanggan" id="inputPelanggan">
+            <input type="hidden" name="metode" id="inputMetode">
+            <div class="flex justify-between text-sm text-ink-variant">
+                <span>Subtotal (<span id="totalQty">0</span> item)</span>
+                <span id="subtotalText" class="font-semibold text-ink">Rp 0</span>
+            </div>
+            <div class="flex justify-between items-center text-sm">
+                <label class="text-ink-variant flex items-center gap-1">Diskon
+                    <button type="button" onclick="document.getElementById('diskon').focus()" class="text-ink-variant/60">
+                        <span class="material-symbols-outlined text-[14px]">edit</span>
+                    </button>
+                </label>
+                <input type="number" name="diskon" id="diskon" value="0" min="0" step="any"
+                       class="w-28 text-right px-2 py-1.5 bg-surface border border-outline-variant/50 rounded-lg text-sm text-error font-semibold focus:outline-none focus:ring-2 focus:ring-brand/40">
+            </div>
+            <div class="flex justify-between items-center pt-3 border-t border-dashed border-outline-variant/60">
+                <span class="font-bold">Total Tagihan</span>
+                <span id="totalText" class="text-3xl font-extrabold text-brand">Rp 0</span>
+            </div>
+            <div class="grid grid-cols-2 gap-3 pt-2">
+                <a href="{{ url_for('dashboard') }}" class="flex items-center justify-center px-4 py-3.5 border border-outline-variant/60 rounded-lg text-sm font-bold uppercase text-ink-variant hover:bg-surface transition-colors">Batal</a>
+                <button type="button" id="btnBayar" class="flex items-center justify-center gap-2 bg-brand hover:bg-brand-light text-white px-4 py-3.5 rounded-lg text-sm font-bold uppercase transition-colors shadow-md shadow-brand/30">
+                    <span class="material-symbols-outlined text-[18px]">payments</span>Konfirmasi Pembayaran
+                </button>
+            </div>
+        </form>
+    </section>
+</div>
+
+<!-- Modal Konfirmasi Pembayaran -->
+<div id="modalBayar" class="modal fixed inset-0 z-[60] items-center justify-center bg-black/50 p-4">
+    <div class="bg-card rounded-xl shadow-xl w-full max-w-sm p-6 text-center">
+        <div class="w-14 h-14 rounded-full bg-brand-fixed/40 text-brand flex items-center justify-center mx-auto mb-3">
+            <span class="material-symbols-outlined text-[28px]">payments</span>
+        </div>
+        <h2 class="text-lg font-bold">Konfirmasi Pembayaran</h2>
+        <p class="text-sm text-ink-variant mt-1">Pastikan pembayaran sudah diterima sebelum mencetak nota.</p>
+        <div class="my-5 py-4 bg-surface rounded-lg">
+            <span class="text-[10px] font-bold uppercase tracking-wider text-ink-variant">Total Pembayaran</span>
+            <span id="modalTotal" class="text-3xl font-extrabold text-brand block mt-1">Rp 0</span>
+            <span class="text-xs text-ink-variant block mt-1">Metode: <span id="modalMetode" class="font-semibold capitalize text-ink">Tunai</span></span>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+            <button type="button" onclick="document.getElementById('modalBayar').classList.remove('open')"
+                    class="px-4 py-3 border border-outline-variant/60 rounded-lg text-sm font-bold uppercase text-ink-variant hover:bg-surface transition-colors">Kembali</button>
+            <button type="button" onclick="document.getElementById('formNota').submit()"
+                    class="flex items-center justify-center gap-2 bg-brand hover:bg-brand-light text-white px-4 py-3 rounded-lg text-sm font-bold uppercase transition-colors shadow-md shadow-brand/30">
+                <span class="material-symbols-outlined text-[18px]">receipt_long</span>Bayar &amp; Cetak
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+    var items = {}; // id -> {id, nama, harga, qty, stok}
+
+    var grid = document.getElementById('gridBarang');
+    var isiNota = document.getElementById('isiNota');
+    var subtotalEl = document.getElementById('subtotalText');
+    var totalEl = document.getElementById('totalText');
+    var diskonEl = document.getElementById('diskon');
+    var totalQtyEl = document.getElementById('totalQty');
+    var inputItems = document.getElementById('inputItems');
+
+    function fmt(n) {
+        return 'Rp ' + Math.round(n).toLocaleString('id-ID');
+    }
+
+    function addItem(btn) {
+        var id = btn.dataset.id;
+        var stok = parseInt(btn.dataset.stok);
+        if (!items[id]) {
+            items[id] = { id: id, nama: btn.dataset.nama || btn.querySelector('p').textContent.trim(), harga: parseFloat(btn.dataset.harga), qty: 0, stok: stok };
+        }
+        if (items[id].qty >= stok) {
+            alert('Stok tidak mencukupi. Sisa: ' + stok);
+            return;
+        }
+        items[id].qty++;
+        render();
+    }
+
+    function removeItem(id) {
+        delete items[id];
+        render();
+    }
+
+    function changeQty(id, delta) {
+        var it = items[id];
+        if (!it) return;
+        var q = it.qty + delta;
+        if (q <= 0) { removeItem(id); return; }
+        if (q > it.stok) { alert('Stok tidak mencukupi. Sisa: ' + it.stok); return; }
+        it.qty = q;
+        render();
+    }
+
+    function render() {
+        var ids = Object.keys(items);
+        var subtotal = 0, totalQty = 0;
+        isiNota.innerHTML = '';
+        if (!ids.length) {
+            isiNota.innerHTML = '<tr><td colspan="5" class="py-10 text-center text-ink-variant/60 text-sm">Belum ada barang. Pilih dari katalog.</td></tr>';
+        }
+        ids.forEach(function (id) {
+            var it = items[id];
+            var sub = it.harga * it.qty;
+            subtotal += sub; totalQty += it.qty;
+            var tr = document.createElement('tr');
+            tr.className = 'border-b border-outline-variant/30';
+            tr.innerHTML =
+                '<td class="py-2.5"><div class="font-semibold leading-tight">' + it.nama + '</div></td>' +
+                '<td class="py-2.5 text-center text-ink-variant">' + fmt(it.harga) + '</td>' +
+                '<td class="py-2.5"><div class="flex items-center justify-center gap-1">' +
+                    '<button type="button" class="w-6 h-6 rounded-full bg-surface hover:bg-outline-variant/40 flex items-center justify-center" data-act="min" data-id="' + id + '"><span class="material-symbols-outlined text-[14px]">remove</span></button>' +
+                    '<span class="w-8 text-center font-bold">' + it.qty + '</span>' +
+                    '<button type="button" class="w-6 h-6 rounded-full bg-surface hover:bg-outline-variant/40 flex items-center justify-center" data-act="plus" data-id="' + id + '"><span class="material-symbols-outlined text-[14px]">add</span></button>' +
+                '</div></td>' +
+                '<td class="py-2.5 text-right font-semibold">' + fmt(sub) + '</td>' +
+                '<td class="py-2.5 text-right"><button type="button" data-act="del" data-id="' + id + '" class="text-ink-variant/40 hover:text-error"><span class="material-symbols-outlined text-[18px]">delete</span></button></td>';
+            isiNota.appendChild(tr);
+        });
+        var diskon = parseFloat(diskonEl.value) || 0;
+        var total = Math.max(0, subtotal - diskon);
+        subtotalEl.textContent = fmt(subtotal);
+        totalQtyEl.textContent = totalQty;
+        totalEl.textContent = fmt(total);
+    }
+
+    grid.addEventListener('click', function (e) {
+        var btn = e.target.closest('.kartu-barang');
+        if (btn && !btn.disabled) addItem(btn);
+    });
+    isiNota.addEventListener('click', function (e) {
+        var btn = e.target.closest('button[data-act]');
+        if (!btn) return;
+        var id = btn.dataset.id, act = btn.dataset.act;
+        if (act === 'min') changeQty(id, -1);
+        else if (act === 'plus') changeQty(id, 1);
+        else if (act === 'del') removeItem(id);
+    });
+    diskonEl.addEventListener('input', render);
+
+    document.getElementById('btnBayar').addEventListener('click', function () {
+        var ids = Object.keys(items);
+        if (!ids.length) {
+            alert('Nota masih kosong. Tambahkan barang terlebih dahulu.');
+            return;
+        }
+        inputItems.value = JSON.stringify(ids.map(function (id) {
+            return { id: items[id].id, qty: items[id].qty };
+        }));
+        inputPelanggan.value = document.getElementById('pelanggan').value || 'Umum';
+        inputMetode.value = document.getElementById('metode').value;
+        document.getElementById('modalTotal').textContent = totalEl.textContent;
+        document.getElementById('modalMetode').textContent = inputMetode.value;
+        document.getElementById('modalBayar').classList.add('open');
+    });
+
+    // Filter kategori
+    document.getElementById('filterKategori').addEventListener('click', function (e) {
+        var chip = e.target.closest('.chip-kat');
+        if (!chip) return;
+        document.querySelectorAll('.chip-kat').forEach(function (c) {
+            c.classList.remove('bg-brand', 'text-white');
+            c.classList.add('bg-surface', 'text-ink-variant');
+        });
+        chip.classList.add('bg-brand', 'text-white');
+        chip.classList.remove('bg-surface', 'text-ink-variant');
+        var kat = chip.dataset.kat;
+        document.querySelectorAll('.kartu-barang').forEach(function (k) {
+            var show = kat === '0' || k.dataset.kategori === kat;
+            k.classList.toggle('hidden', !show);
+        });
+    });
+
+    // Pencarian
+    document.getElementById('cariBarang').addEventListener('input', function (e) {
+        var q = e.target.value.toLowerCase();
+        document.querySelectorAll('.kartu-barang').forEach(function (k) {
+            var match = k.dataset.nama.indexOf(q) !== -1 || k.dataset.kode.indexOf(q) !== -1;
+            k.classList.toggle('hidden', !match);
+        });
+    });
+})();
+</script>
+{% endblock %}

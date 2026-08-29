@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block title %}Cetak Nota - Toko Karunia Tambu{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto">
+    <div id="area-cetak" class="bg-white border border-black p-6 text-black" style="font-family: 'Courier New', monospace;">
+        <div class="text-center border-b border-black pb-3 mb-3">
+            <h1 class="text-base font-bold uppercase tracking-wide">{{ pengaturan.nama_toko if pengaturan else 'Toko Karunia Tambu' }}</h1>
+            {% if pengaturan and pengaturan.alamat %}<p class="text-xs">{{ pengaturan.alamat }}</p>{% endif %}
+            {% if pengaturan and pengaturan.telepon %}<p class="text-xs">Telp: {{ pengaturan.telepon }}</p>{% endif %}
+        </div>
+
+        <div class="flex justify-between text-xs mb-3">
+            <span>No: {{ nota.no_nota }}</span>
+            <span>{{ nota.tanggal }} {{ nota.waktu[:5] if nota.waktu }}</span>
+        </div>
+        <div class="text-xs mb-3">Pelanggan: {{ nota.pelanggan }}</div>
+
+        <table class="w-full text-xs mb-3">
+            <thead>
+                <tr class="border-y border-black">
+                    <th class="text-left py-1.5">Barang</th>
+                    <th class="text-center py-1.5">Qty</th>
+                    <th class="text-right py-1.5">Harga</th>
+                    <th class="text-right py-1.5">Jumlah</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for it in items %}
+                <tr class="border-b border-dotted border-black">
+                    <td class="py-1.5">{{ it.nama_barang }}</td>
+                    <td class="py-1.5 text-center">{{ it.qty }}</td>
+                    <td class="py-1.5 text-right">{{ '{:,.0f}'.format(it.harga).replace(',', '.') }}</td>
+                    <td class="py-1.5 text-right">{{ '{:,.0f}'.format(it.subtotal).replace(',', '.') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <div class="flex justify-end mb-2">
+            <div class="w-40 text-xs space-y-1">
+                {% if nota.diskon %}
+                <div class="flex justify-between"><span>Diskon</span><span>- {{ '{:,.0f}'.format(nota.diskon).replace(',', '.') }}</span></div>
+                {% endif %}
+                <div class="flex justify-between font-bold border-t border-black pt-1 text-sm">
+                    <span>TOTAL</span><span>Rp {{ '{:,.0f}'.format(nota.total).replace(',', '.') }}</span>
+                </div>
+                <div class="flex justify-between uppercase">
+                    <span>Bayar</span><span>{{ nota.metode }}</span>
+                </div>
+            </div>
+        </div>
+
+        <p class="text-center text-xs border-t border-black pt-2 mt-3">Terima kasih telah berbelanja</p>
+    </div>
+
+    <div class="flex justify-center gap-3 mt-6 no-print">
+        <a href="{{ url_for('dashboard') }}" class="flex items-center gap-2 px-5 py-3 border border-outline-variant/60 rounded-lg text-sm font-bold uppercase text-ink-variant hover:bg-surface transition-colors">
+            <span class="material-symbols-outlined text-[18px]">arrow_back</span>Kembali
+        </a>
+        <button onclick="window.print()" class="flex items-center gap-2 bg-brand hover:bg-brand-light text-white px-6 py-3 rounded-lg text-sm font-bold uppercase transition-colors shadow-md shadow-brand/30">
+            <span class="material-symbols-outlined text-[18px]">print</span>Cetak Nota
+        </button>
+    </div>
+</div>
+{% endblock %}

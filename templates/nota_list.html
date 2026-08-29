@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block title %}Daftar Nota - Toko Karunia Tambu{% endblock %}
+{% block content %}
+<div class="mb-6">
+    <h1 class="text-3xl font-extrabold">Riwayat Nota</h1>
+    <p class="text-sm text-ink-variant mt-1">Klik salah satu riwayat untuk melihat nota.</p>
+</div>
+
+<div class="bg-card rounded-xl shadow-sm overflow-hidden">
+    <div class="overflow-x-auto thin-scroll">
+        <table class="w-full text-sm min-w-[720px]">
+            <thead>
+                <tr class="text-[10px] uppercase tracking-wider text-ink-variant bg-surface border-b border-outline-variant/40">
+                    <th class="text-left px-5 py-3 font-bold">No. Nota</th>
+                    <th class="text-left px-5 py-3 font-bold">Tanggal</th>
+                    <th class="text-left px-5 py-3 font-bold">Pelanggan</th>
+                    <th class="text-center px-5 py-3 font-bold">Item</th>
+                    <th class="text-right px-5 py-3 font-bold">Total</th>
+                    <th class="text-center px-5 py-3 font-bold">Status</th>
+                    <th class="px-5 py-3"></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for n in notas %}
+                <tr class="border-b border-outline-variant/30 hover:bg-surface/60 transition-colors cursor-pointer" onclick="window.location='{{ url_for('nota_cetak', id=n.id) }}'">
+                    <td class="px-5 py-3.5 font-mono font-semibold text-brand">{{ n.no_nota }}</td>
+                    <td class="px-5 py-3.5 text-ink-variant">{{ n.tanggal }} {{ n.waktu[:5] if n.waktu }}</td>
+                    <td class="px-5 py-3.5 font-semibold">{{ n.pelanggan }}</td>
+                    <td class="px-5 py-3.5 text-center">{{ n.jumlah_item }}</td>
+                    <td class="px-5 py-3.5 text-right font-bold">{{ n.total|rupiah }}</td>
+                    <td class="px-5 py-3.5 text-center">
+                        <span class="inline-block text-[10px] font-bold uppercase tracking-wide rounded-full px-2.5 py-1
+                             {% if n.status == 'lunas' %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">{{ n.status }}</span>
+                    </td>
+                    <td class="px-5 py-3.5 text-right whitespace-nowrap">
+                        <a href="{{ url_for('nota_cetak', id=n.id) }}" title="Cetak" onclick="event.stopPropagation()" class="inline-flex p-2 rounded-lg text-ink-variant hover:bg-brand-fixed hover:text-brand transition-colors">
+                            <span class="material-symbols-outlined text-[18px]">print</span>
+                        </a>
+                        {% if n.status == 'utang' and session.get('role') == 'admin' %}
+                        <a href="{{ url_for('nota_lunas', id=n.id) }}" title="Tandai Lunas" onclick="event.stopPropagation()" class="inline-flex p-2 rounded-lg text-green-700 hover:bg-green-50 transition-colors">
+                            <span class="material-symbols-outlined text-[18px]">task_alt</span>
+                        </a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="7" class="px-5 py-10 text-center text-ink-variant/60">Belum ada nota. Klik "Buat Nota Baru" untuk mulai transaksi.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

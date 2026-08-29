@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block title %}Kategori & Satuan - Toko Karunia Tambu{% endblock %}
+{% block content %}
+<div class="mb-6">
+    <h1 class="text-3xl font-extrabold">Kategori &amp; Satuan</h1>
+    <p class="text-sm text-ink-variant mt-1">Kelola daftar kategori barang dan satuan yang dipakai di seluruh aplikasi.</p>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Kategori -->
+    <section class="bg-card rounded-xl shadow-sm p-6 self-start">
+        <h2 class="text-lg font-bold flex items-center gap-2 mb-4">
+            <span class="material-symbols-outlined text-brand">category</span>Kategori Barang
+        </h2>
+        <form method="POST" action="{{ url_for('kategori_tambah') }}" class="flex gap-2 mb-5">
+            <input type="text" name="nama" required placeholder="Nama kategori baru"
+                   class="flex-1 px-3 py-2.5 bg-surface border border-outline-variant/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/40">
+            <button type="submit" class="flex items-center gap-1 bg-brand hover:bg-brand-light text-white text-sm font-bold px-4 py-2.5 rounded-lg transition-colors">
+                <span class="material-symbols-outlined text-[18px]">add</span>Tambah
+            </button>
+        </form>
+        <div class="space-y-2">
+            {% for k in kategori %}
+            <div class="flex items-center justify-between px-4 py-3 bg-surface rounded-lg">
+                <div>
+                    <span class="font-semibold text-sm">{{ k.nama }}</span>
+                    <span class="text-xs text-ink-variant ml-2">{{ k.jumlah_barang }} barang</span>
+                </div>
+                {% if session.get('role') == 'admin' %}
+                <a href="{{ url_for('kategori_hapus', id=k.id) }}" title="Hapus"
+                   class="p-1.5 rounded-lg text-ink-variant/40 hover:text-error hover:bg-red-50 transition-colors">
+                    <span class="material-symbols-outlined text-[18px]">delete</span>
+                </a>
+                {% endif %}
+            </div>
+            {% else %}
+            <p class="text-sm text-ink-variant/60 text-center py-6">Belum ada kategori.</p>
+            {% endfor %}
+        </div>
+    </section>
+
+    <!-- Satuan -->
+    <section class="bg-card rounded-xl shadow-sm p-6 self-start">
+        <h2 class="text-lg font-bold flex items-center gap-2 mb-4">
+            <span class="material-symbols-outlined text-brand">straighten</span>Satuan Barang
+        </h2>
+        <form method="POST" action="{{ url_for('satuan_tambah') }}" class="flex gap-2 mb-5">
+            <input type="text" name="nama" required placeholder="Nama satuan baru (misal: sak)"
+                   class="flex-1 px-3 py-2.5 bg-surface border border-outline-variant/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/40">
+            <button type="submit" class="flex items-center gap-1 bg-brand hover:bg-brand-light text-white text-sm font-bold px-4 py-2.5 rounded-lg transition-colors">
+                <span class="material-symbols-outlined text-[18px]">add</span>Tambah
+            </button>
+        </form>
+        <div class="space-y-2">
+            {% for s in satuan %}
+            <div class="flex items-center justify-between px-4 py-3 bg-surface rounded-lg">
+                <div>
+                    <span class="font-semibold text-sm capitalize">{{ s.nama }}</span>
+                    <span class="text-xs text-ink-variant ml-2">{{ s.jumlah_barang }} barang</span>
+                </div>
+                {% if session.get('role') == 'admin' %}
+                <a href="{{ url_for('satuan_hapus', id=s.id) }}" title="Hapus"
+                   class="p-1.5 rounded-lg text-ink-variant/40 hover:text-error hover:bg-red-50 transition-colors">
+                    <span class="material-symbols-outlined text-[18px]">delete</span>
+                </a>
+                {% endif %}
+            </div>
+            {% else %}
+            <p class="text-sm text-ink-variant/60 text-center py-6">Belum ada satuan.</p>
+            {% endfor %}
+        </div>
+    </section>
+</div>
+{% endblock %}

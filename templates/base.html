@@ -4,75 +4,138 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Toko Karunia Tambu{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'brand': '#00448c',
+                        'brand-light': '#005bb7',
+                        'brand-dim': '#aac7ff',
+                        'brand-fixed': '#d7e3ff',
+                        'surface': '#f8f9fa',
+                        'card': '#ffffff',
+                        'ink': '#191c1d',
+                        'ink-variant': '#424752',
+                        'outline-variant': '#c2c6d4',
+                        'sidebar': '#2e3132',
+                        'sidebar-dim': '#c4c6cb',
+                        'error': '#ba1a1a',
+                        'error-bg': '#ffdad6',
+                    },
+                    fontFamily: {
+                        'sans': ['Inter', 'Roboto', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet"/>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body>
+<body class="bg-surface font-sans text-ink">
     {% if 'user_id' in session %}
-    <div class="topbar">
-        <button class="menu-toggle" id="menuToggle" aria-label="Buka menu">☰</button>
-        <img src="{{ url_for('static', filename='logo/logo.png') }}" alt="Logo" class="topbar-logo">
-        <span class="topbar-title">Karunia Tambu</span>
-    </div>
-    <div class="sidebar-overlay" id="sidebarOverlay"></div>
-    <div class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <img src="{{ url_for('static', filename='logo/logo.png') }}" alt="Logo Karunia Tambu" class="sidebar-logo">
-            <h3>Karunia Tambu</h3>
+    <div id="sidebarOverlay" class="sidebar-overlay fixed inset-0 bg-black/50 z-40 hidden lg:hidden"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar fixed left-0 top-0 h-full w-72 bg-sidebar text-sidebar-dim z-50 flex flex-col shadow-xl -translate-x-full lg:translate-x-0 transition-transform duration-200">
+        <div class="p-6 flex items-center gap-3 border-b border-white/10">
+            <img src="{{ url_for('static', filename='logo/logo.png') }}" alt="Logo" class="h-11 w-11 object-contain bg-white rounded-md p-0.5">
+            <div class="flex flex-col">
+                <span class="text-lg font-bold text-white leading-tight">Karunia Tambu</span>
+                <span class="text-[10px] uppercase tracking-widest text-sidebar-dim">Management System</span>
+            </div>
         </div>
-        <nav class="sidebar-nav">
-            <a href="{{ url_for('dashboard') }}" class="{% if request.endpoint == 'dashboard' %}active{% endif %}">
-                📊 Dashboard
+        <nav class="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
+            {% set nav_items = [
+                (url_for('dashboard'), 'dashboard', 'Dashboard', 'dashboard'),
+                (url_for('barang_list'), 'barang_list', 'Inventaris', 'inventory_2'),
+                (url_for('nota_buat'), 'nota_buat', 'Buat Pesanan', 'receipt_long'),
+                (url_for('keuangan_page'), 'keuangan_page', 'Pemasukan & Pengeluaran', 'account_balance_wallet'),
+                (url_for('laporan_page'), 'laporan_page', 'Laporan', 'monitoring'),
+                (url_for('kategori_page'), 'kategori_page', 'Kategori & Satuan', 'category'),
+            ] %}
+            {% for url, key, label, icon in nav_items %}
+            <a href="{{ url }}"
+               class="flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-all
+                      {% if request.endpoint == key %}bg-brand text-white shadow-lg shadow-brand/30{% else %}hover:bg-white/10 hover:text-white{% endif %}">
+                <span class="material-symbols-outlined mr-4 text-[22px]">{{ icon }}</span>{{ label }}
             </a>
-            <a href="{{ url_for('barang_list') }}" class="{% if request.endpoint == 'barang_list' %}active{% endif %}">
-                📦 Barang
-            </a>
-            <a href="{{ url_for('stok_page') }}" class="{% if request.endpoint == 'stok_page' %}active{% endif %}">
-                📥📦 Stok Masuk/Keluar
-            </a>
-            <a href="{{ url_for('keuangan_page') }}" class="{% if request.endpoint == 'keuangan_page' %}active{% endif %}">
-                💰 Keuangan
-            </a>
-            <a href="{{ url_for('laporan_page') }}" class="{% if request.endpoint == 'laporan_page' %}active{% endif %}">
-                📋 Laporan
-            </a>
+            {% endfor %}
             {% if session.get('role') == 'admin' %}
-            <a href="{{ url_for('pengaturan_page') }}" class="{% if request.endpoint == 'pengaturan_page' %}active{% endif %}">
-                ⚙️ Pengaturan
+            <a href="{{ url_for('pengaturan_page') }}"
+               class="flex items-center px-4 py-3 rounded-lg text-sm font-medium transition-all
+                      {% if request.endpoint == 'pengaturan_page' %}bg-brand text-white shadow-lg shadow-brand/30{% else %}hover:bg-white/10 hover:text-white{% endif %}">
+                <span class="material-symbols-outlined mr-4 text-[22px]">settings</span>Pengaturan
             </a>
             {% endif %}
         </nav>
-        <div class="sidebar-footer">
-            <div class="user-info">
-                <strong>{{ session.get('nama_lengkap') or session.get('username') }}</strong>
-                <small>({{ session.get('role') }})</small>
+        <div class="p-4 border-t border-white/10 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-brand flex items-center justify-center text-white shrink-0">
+                <span class="material-symbols-outlined">person</span>
             </div>
-            <a href="{{ url_for('logout') }}" class="btn-logout">🚪 Logout</a>
+            <div class="flex-1 min-w-0">
+                <div class="text-sm font-semibold text-white truncate">{{ session.get('nama_lengkap') or session.get('username') }}</div>
+                <div class="text-xs text-sidebar-dim capitalize">{{ session.get('role') }}</div>
+            </div>
+            <a href="{{ url_for('logout') }}" title="Logout" class="p-2 rounded-lg hover:bg-white/10 text-sidebar-dim hover:text-white transition-colors">
+                <span class="material-symbols-outlined text-[20px]">logout</span>
+            </a>
         </div>
+    </aside>
+
+    <!-- Topbar -->
+    <div class="lg:pl-72">
+        <header class="sticky top-0 z-30 bg-card/90 backdrop-blur border-b border-outline-variant/40 h-16 flex items-center gap-3 px-4 sm:px-8">
+            <button id="menuToggle" aria-label="Buka menu" class="lg:hidden p-2 rounded-lg hover:bg-surface text-ink-variant">
+                <span class="material-symbols-outlined">menu</span>
+            </button>
+            <form action="{{ url_for('barang_list') }}" class="flex-1 max-w-xl relative">
+                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-ink-variant text-[20px]">search</span>
+                <input type="text" name="search" value="{{ request.args.get('search', '') }}" placeholder="Cari kode atau nama barang..."
+                       class="w-full pl-10 pr-4 py-2.5 bg-surface rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-brand/40">
+            </form>
+            <div class="ml-auto flex items-center gap-2">
+                <a href="{{ url_for('nota_buat') }}" class="hidden sm:flex items-center gap-2 bg-brand hover:bg-brand-light text-white text-sm font-semibold px-4 py-2.5 rounded-full transition-colors shadow-md shadow-brand/30">
+                    <span class="material-symbols-outlined text-[18px]">add_shopping_cart</span>Buat Pesanan
+                </a>
+                {% if session.get('role') == 'admin' %}
+                <a href="{{ url_for('pengaturan_page') }}" class="flex items-center gap-2 bg-surface hover:bg-outline-variant/30 text-ink-variant text-sm font-semibold px-4 py-2.5 rounded-full transition-colors">
+                    <span class="material-symbols-outlined text-[18px]">settings</span><span class="hidden sm:inline">Pengaturan</span>
+                </a>
+                {% endif %}
+            </div>
+        </header>
+
+        <main class="px-4 sm:px-8 py-8 max-w-[1440px] mx-auto">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            <div class="mb-6 space-y-2">
+                {% for category, message in messages %}
+                <div class="flash flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium
+                     {% if category == 'success' %}bg-green-50 text-green-800 border border-green-200
+                     {% elif category == 'danger' %}bg-red-50 text-red-800 border border-red-200
+                     {% elif category == 'warning' %}bg-amber-50 text-amber-800 border border-amber-200
+                     {% else %}bg-blue-50 text-blue-800 border border-blue-200{% endif %}">
+                    <span class="material-symbols-outlined text-[20px]">
+                        {% if category == 'success' %}check_circle{% elif category == 'danger' %}error{% elif category == 'warning' %}warning{% else %}info{% endif %}
+                    </span>
+                    {{ message }}
+                    <button onclick="this.parentElement.remove()" class="ml-auto opacity-60 hover:opacity-100">
+                        <span class="material-symbols-outlined text-[18px]">close</span>
+                    </button>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% endwith %}
+            {% block content %}{% endblock %}
+        </main>
     </div>
-    <div class="main-content">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-        <div class="flash-messages">
-            {% for category, message in messages %}
-            <div class="flash flash-{{ category }}">{{ message }}</div>
-            {% endfor %}
-        </div>
-        {% endif %}
-        {% endwith %}
-        {% block content %}{% endblock %}
-    </div>
-    {% else %}
-    {% with messages = get_flashed_messages(with_categories=true) %}
-    {% if messages %}
-    <div class="flash-messages" style="position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:9999;width:90%;max-width:400px;">
-        {% for category, message in messages %}
-        <div class="flash flash-{{ category }}">{{ message }}</div>
-        {% endfor %}
-    </div>
-    {% endif %}
-    {% endwith %}
-    {% block login_content %}{% endblock %}
-    {% endif %}
+
     <script>
         (function () {
             var sidebar = document.getElementById('sidebar');
@@ -80,18 +143,40 @@
             var toggle = document.getElementById('menuToggle');
             if (!sidebar || !toggle) return;
             function closeMenu() {
-                sidebar.classList.remove('open');
-                overlay.classList.remove('show');
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            }
+            function openMenu() {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
             }
             toggle.addEventListener('click', function () {
-                sidebar.classList.toggle('open');
-                overlay.classList.toggle('show');
+                if (sidebar.classList.contains('-translate-x-full')) openMenu(); else closeMenu();
             });
             overlay.addEventListener('click', closeMenu);
-            sidebar.querySelectorAll('.sidebar-nav a').forEach(function (a) {
+            sidebar.querySelectorAll('nav a').forEach(function (a) {
                 a.addEventListener('click', closeMenu);
             });
         })();
     </script>
+    {% else %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="fixed top-5 left-1/2 -translate-x-1/2 z-[9999] w-[90%] max-w-md space-y-2">
+        {% for category, message in messages %}
+        <div class="flash rounded-lg px-4 py-3 text-sm font-medium shadow-lg
+             {% if category == 'success' %}bg-green-600 text-white
+             {% elif category == 'danger' %}bg-red-600 text-white
+             {% elif category == 'warning' %}bg-amber-500 text-white
+             {% else %}bg-blue-600 text-white{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+    {% block login_content %}{% endblock %}
+    {% endif %}
+    {% block scripts %}{% endblock %}
 </body>
 </html>

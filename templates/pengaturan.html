@@ -1,101 +1,105 @@
 {% extends "base.html" %}
 {% block title %}Pengaturan - Toko Karunia Tambu{% endblock %}
 {% block content %}
-<div class="page-header">
-    <h1>⚙️ Pengaturan</h1>
+<div class="mb-6">
+    <h1 class="text-3xl font-extrabold">Pengaturan</h1>
+    <p class="text-sm text-ink-variant mt-1">Kelola informasi toko dan pengguna sistem.</p>
 </div>
 
-<!-- Info Toko -->
-<div class="card" style="margin-bottom:20px;">
-    <div class="card-header">
-        <h3>🏪 Informasi Toko</h3>
-    </div>
-    <div class="card-body">
-        <form method="POST">
-            <div class="form-grid">
-                <div class="form-group">
-                    <label>Nama Toko</label>
-                    <input type="text" name="nama_toko" value="{{ pengaturan.nama_toko or '' }}">
-                </div>
-                <div class="form-group">
-                    <label>Alamat</label>
-                    <input type="text" name="alamat" value="{{ pengaturan.alamat or '' }}" placeholder="Alamat toko">
-                </div>
-                <div class="form-group">
-                    <label>Telepon</label>
-                    <input type="text" name="telepon" value="{{ pengaturan.telepon or '' }}" placeholder="08xxx">
-                </div>
+<div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+    <!-- Info Toko -->
+    <section class="bg-card rounded-xl shadow-sm p-6 self-start">
+        <h2 class="text-lg font-bold flex items-center gap-2 mb-4">
+            <span class="material-symbols-outlined text-brand">storefront</span>Informasi Toko
+        </h2>
+        <form method="POST" class="space-y-4">
+            <div>
+                <label class="block text-[10px] font-bold uppercase tracking-wider text-ink-variant mb-1.5">Nama Toko</label>
+                <input type="text" name="nama_toko" value="{{ pengaturan.nama_toko or '' }}" class="w-full px-3 py-2.5 bg-surface border border-outline-variant/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/40">
             </div>
-            <button type="submit" class="btn btn-primary">💾 Simpan Pengaturan</button>
-        </form>
-    </div>
-</div>
-
-<!-- Tambah User -->
-<div class="card" style="margin-bottom:20px;">
-    <div class="card-header">
-        <h3>👤 Tambah User/Karyawan</h3>
-    </div>
-    <div class="card-body">
-        <form method="POST" action="{{ url_for('tambah_user') }}">
-            <div class="form-grid">
-                <div class="form-group">
-                    <label>Username *</label>
-                    <input type="text" name="username" placeholder="username" required>
-                </div>
-                <div class="form-group">
-                    <label>Password *</label>
-                    <input type="password" name="password" placeholder="password" required>
-                </div>
-                <div class="form-group">
-                    <label>Nama Lengkap</label>
-                    <input type="text" name="nama_lengkap" placeholder="Nama lengkap">
-                </div>
-                <div class="form-group">
-                    <label>Role</label>
-                    <select name="role">
-                        <option value="karyawan">Karyawan</option>
-                        <option value="admin">Admin</option>
-                    </select>
-                </div>
+            <div>
+                <label class="block text-[10px] font-bold uppercase tracking-wider text-ink-variant mb-1.5">Alamat</label>
+                <input type="text" name="alamat" value="{{ pengaturan.alamat or '' }}" placeholder="Alamat toko" class="w-full px-3 py-2.5 bg-surface border border-outline-variant/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/40">
             </div>
-            <button type="submit" class="btn btn-primary">➕ Tambah User</button>
+            <div>
+                <label class="block text-[10px] font-bold uppercase tracking-wider text-ink-variant mb-1.5">Telepon</label>
+                <input type="text" name="telepon" value="{{ pengaturan.telepon or '' }}" placeholder="08xxx" class="w-full px-3 py-2.5 bg-surface border border-outline-variant/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/40">
+            </div>
+            <button type="submit" class="flex items-center gap-2 bg-brand hover:bg-brand-light text-white font-bold px-5 py-2.5 rounded-lg transition-colors">
+                <span class="material-symbols-outlined text-[18px]">save</span>Simpan Pengaturan
+            </button>
         </form>
-    </div>
-</div>
+    </section>
 
-<!-- Daftar Karyawan -->
-<div class="card">
-    <div class="card-header">
-        <h3>👥 Daftar Karyawan</h3>
-    </div>
-    <div class="card-body table-responsive">
-        <table>
-            <thead>
-                <tr>
-                    <th>No</th>
-                    <th>Username</th>
-                    <th>Nama Lengkap</th>
-                    <th>Role</th>
-                    <th>Dibuat</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for u in users %}
-                <tr>
-                    <td>{{ loop.index }}</td>
-                    <td><strong>{{ u.username }}</strong></td>
-                    <td>{{ u.nama_lengkap or '-' }}</td>
-                    <td>
-                        <span class="badge {% if u.role == 'admin' %}badge-primary{% else %}badge-success{% endif %}">
-                            {{ u.role|capitalize }}
-                        </span>
-                    </td>
-                    <td>{{ u.created_at[:10] }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="space-y-6">
+        <!-- Tambah User -->
+        <section class="bg-card rounded-xl shadow-sm p-6">
+            <h2 class="text-lg font-bold flex items-center gap-2 mb-4">
+                <span class="material-symbols-outlined text-brand">person_add</span>Tambah User/Karyawan
+            </h2>
+            <form method="POST" action="{{ url_for('tambah_user') }}">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase tracking-wider text-ink-variant mb-1.5">Username *</label>
+                        <input type="text" name="username" placeholder="username" required class="w-full px-3 py-2.5 bg-surface border border-outline-variant/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/40">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase tracking-wider text-ink-variant mb-1.5">Password *</label>
+                        <input type="password" name="password" placeholder="password" required class="w-full px-3 py-2.5 bg-surface border border-outline-variant/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/40">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase tracking-wider text-ink-variant mb-1.5">Nama Lengkap</label>
+                        <input type="text" name="nama_lengkap" placeholder="Nama lengkap" class="w-full px-3 py-2.5 bg-surface border border-outline-variant/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/40">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold uppercase tracking-wider text-ink-variant mb-1.5">Role</label>
+                        <select name="role" class="w-full px-3 py-2.5 bg-surface border border-outline-variant/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/40">
+                            <option value="karyawan">Karyawan</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="submit" class="mt-4 flex items-center gap-2 bg-brand hover:bg-brand-light text-white font-bold px-5 py-2.5 rounded-lg transition-colors">
+                    <span class="material-symbols-outlined text-[18px]">add</span>Tambah User
+                </button>
+            </form>
+        </section>
+
+        <!-- Daftar Karyawan -->
+        <section class="bg-card rounded-xl shadow-sm overflow-hidden">
+            <div class="p-6 pb-4">
+                <h2 class="text-lg font-bold flex items-center gap-2">
+                    <span class="material-symbols-outlined text-brand">groups</span>Daftar Karyawan
+                </h2>
+            </div>
+            <div class="overflow-x-auto thin-scroll">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="text-[10px] uppercase tracking-wider text-ink-variant bg-surface border-y border-outline-variant/40">
+                            <th class="text-left px-5 py-3 font-bold">No</th>
+                            <th class="text-left px-5 py-3 font-bold">Username</th>
+                            <th class="text-left px-5 py-3 font-bold">Nama Lengkap</th>
+                            <th class="text-center px-5 py-3 font-bold">Role</th>
+                            <th class="text-left px-5 py-3 font-bold">Dibuat</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for u in users %}
+                        <tr class="border-b border-outline-variant/30">
+                            <td class="px-5 py-3 text-ink-variant">{{ loop.index }}</td>
+                            <td class="px-5 py-3 font-semibold">{{ u.username }}</td>
+                            <td class="px-5 py-3">{{ u.nama_lengkap or '-' }}</td>
+                            <td class="px-5 py-3 text-center">
+                                <span class="inline-block text-[10px] font-bold uppercase rounded-full px-2.5 py-1
+                                     {% if u.role == 'admin' %}bg-brand text-white{% else %}bg-green-100 text-green-700{% endif %}">{{ u.role }}</span>
+                            </td>
+                            <td class="px-5 py-3 text-ink-variant">{{ u.created_at[:10] }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
     </div>
 </div>
 {% endblock %}

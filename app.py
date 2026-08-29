@@ -1,4 +1,5 @@
 import os
+import json
 import sqlite3
 import hashlib
 import secrets
@@ -166,13 +167,61 @@ def init_db():
                 logo TEXT
             )
         """)
-
-        cur.execute("SELECT id FROM users WHERE username = 'admin'")
-        if not cur.fetchone():
-            cur.execute(
-                "INSERT INTO users (username, password, role, nama_lengkap) VALUES (%s, %s, %s, %s)",
-                ('admin', hash_password('admin123'), 'admin', 'Administrator')
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS nota (
+                id SERIAL PRIMARY KEY,
+                no_nota TEXT UNIQUE NOT NULL,
+                pelanggan TEXT DEFAULT 'Umum',
+                total REAL NOT NULL DEFAULT 0,
+                diskon REAL DEFAULT 0,
+                metode TEXT DEFAULT 'tunai',
+                status TEXT DEFAULT 'lunas' CHECK(status IN ('lunas', 'utang')),
+                tanggal DATE DEFAULT CURRENT_DATE,
+                waktu TIME DEFAULT CURRENT_TIME,
+                user_id INTEGER REFERENCES users(id)
             )
+        """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS nota_item (
+                id SERIAL PRIMARY KEY,
+                nota_id INTEGER NOT NULL REFERENCES nota(id) ON DELETE CASCADE,
+                barang_id INTEGER REFERENCES barang(id),
+                nama_barang TEXT NOT NULL,
+                harga REAL NOT NULL,
+                qty INTEGER NOT NULL,
+                subtotal REAL NOT NULL
+            )
+        """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS pemesanan (
+                id SERIAL PRIMARY KEY,
+                barang_id INTEGER NOT NULL REFERENCES barang(id),
+                supplier TEXT,
+                qty INTEGER NOT NULL,
+                satuan TEXT DEFAULT 'pcs',
+                status TEXT DEFAULT 'dipesan' CHECK(status IN ('dipesan', 'diterima', 'batal')),
+                catat_pengeluaran INTEGER DEFAULT 0,
+                tanggal DATE DEFAULT CURRENT_DATE,
+                user_id INTEGER REFERENCES users(id)
+            )
+        """)
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS satuan (
+                id SERIAL PRIMARY KEY,
+                nama TEXT UNIQUE NOT NULL
+            )
+        """)
+
+        # Hapus akun admin default (admin/admin123) bila masih memakai password bawaan.
+        cur.execute("SELECT id, password FROM users WHERE username = 'admin'")
+        row = cur.fetchone()
+        if row and (check_password_hash(row['password'], 'admin123') or row['password'] == hashlib.sha256(b'admin123').hexdigest()):
+            cur.execute("SELECT id FROM users WHERE username != 'admin' AND role = 'admin' ORDER BY id LIMIT 1")
+            lain = cur.fetchone()
+            if lain:
+                for tbl in ('stok_log', 'transaksi', 'nota'):
+                    cur.execute(f"UPDATE {tbl} SET user_id = %s WHERE user_id = %s", (lain['id'], row['id']))
+                cur.execute("DELETE FROM users WHERE id = %s", (row['id'],))
 
         cur.execute("SELECT COUNT(*) FROM kategori")
         if cur.fetchone()[0] == 0:
@@ -183,6 +232,16 @@ def init_db():
         cur.execute("SELECT id FROM pengaturan LIMIT 1")
         if not cur.fetchone():
             cur.execute("INSERT INTO pengaturan (nama_toko) VALUES (%s)", ('Toko Karunia Tambu',))
+
+        cur.execute("SELECT COUNT(*) FROM satuan")
+        if cur.fetchone()[0] == 0:
+            for s in ['pcs', 'sak', 'dus', 'box', 'roll', 'unit', 'meter', 'kaleng', 'liter']:
+                cur.execute("INSERT INTO satuan (nama) VALUES (%s)", (s,))
+
+        try:
+            cur.execute("ALTER TABLE barang ADD COLUMN foto TEXT DEFAULT ''")
+        except Exception:
+            pass
 
         cur.close()
         db.close()
@@ -245,14 +304,59 @@ def init_db():
                 telepon TEXT,
                 logo TEXT
             );
+            CREATE TABLE IF NOT EXISTS nota (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                no_nota TEXT UNIQUE NOT NULL,
+                pelanggan TEXT DEFAULT 'Umum',
+                total REAL NOT NULL DEFAULT 0,
+                diskon REAL DEFAULT 0,
+                metode TEXT DEFAULT 'tunai',
+                status TEXT DEFAULT 'lunas' CHECK(status IN ('lunas', 'utang')),
+                tanggal DATE DEFAULT (date('now')),
+                waktu TIME DEFAULT (time('now', 'localtime')),
+                user_id INTEGER,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            );
+            CREATE TABLE IF NOT EXISTS nota_item (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nota_id INTEGER NOT NULL,
+                barang_id INTEGER,
+                nama_barang TEXT NOT NULL,
+                harga REAL NOT NULL,
+                qty INTEGER NOT NULL,
+                subtotal REAL NOT NULL,
+                FOREIGN KEY (nota_id) REFERENCES nota(id) ON DELETE CASCADE,
+                FOREIGN KEY (barang_id) REFERENCES barang(id)
+            );
+            CREATE TABLE IF NOT EXISTS pemesanan (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                barang_id INTEGER NOT NULL,
+                supplier TEXT,
+                qty INTEGER NOT NULL,
+                satuan TEXT DEFAULT 'pcs',
+                status TEXT DEFAULT 'dipesan' CHECK(status IN ('dipesan', 'diterima', 'batal')),
+                catat_pengeluaran INTEGER DEFAULT 0,
+                tanggal DATE DEFAULT (date('now')),
+                user_id INTEGER,
+                FOREIGN KEY (barang_id) REFERENCES barang(id),
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            );
+            CREATE TABLE IF NOT EXISTS satuan (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nama TEXT UNIQUE NOT NULL
+            );
         """)
 
-        cursor = db.execute("SELECT id FROM users WHERE username = 'admin'")
-        if not cursor.fetchone():
-            db.execute(
-                "INSERT INTO users (username, password, role, nama_lengkap) VALUES (?, ?, ?, ?)",
-                ('admin', hash_password('admin123'), 'admin', 'Administrator')
-            )
+        # Hapus akun admin default (admin/admin123) bila masih memakai password bawaan.
+        cursor = db.execute("SELECT id, password FROM users WHERE username = 'admin'")
+        row = cursor.fetchone()
+        if row and verify_password('admin123', row[1]):
+            lain = db.execute(q("SELECT id FROM users WHERE username != 'admin' AND role = 'admin' ORDER BY id LIMIT 1")).fetchone()
+            if lain:
+                id_lain = lain[0] if not hasattr(lain, 'keys') else lain['id']
+                for tbl in ('stok_log', 'transaksi', 'nota'):
+                    db.execute(q(f"UPDATE {tbl} SET user_id = ? WHERE user_id = ?"), (id_lain, row[0]))
+                db.execute(q("DELETE FROM users WHERE id = ?"), (row[0],))
 
         cursor = db.execute("SELECT COUNT(*) FROM kategori")
         if cursor.fetchone()[0] == 0:
@@ -263,6 +367,15 @@ def init_db():
         cursor = db.execute("SELECT id FROM pengaturan LIMIT 1")
         if not cursor.fetchone():
             db.execute("INSERT INTO pengaturan (nama_toko) VALUES (?)", ('Toko Karunia Tambu',))
+
+        cursor = db.execute("SELECT COUNT(*) FROM satuan")
+        if cursor.fetchone()[0] == 0:
+            for s in ['pcs', 'sak', 'dus', 'box', 'roll', 'unit', 'meter', 'kaleng', 'liter']:
+                db.execute("INSERT INTO satuan (nama) VALUES (?)", (s,))
+
+        cols = [r[1] for r in db.execute("PRAGMA table_info(barang)").fetchall()]
+        if 'foto' not in cols:
+            db.execute("ALTER TABLE barang ADD COLUMN foto TEXT DEFAULT ''")
 
         db.commit()
         db.close()
@@ -289,6 +402,17 @@ def login_required(f):
             return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated_function
+
+
+@app.template_filter('rupiah')
+def rupiah(value):
+    try:
+        value = float(value)
+    except (TypeError, ValueError):
+        value = 0
+    if value == int(value):
+        value = int(value)
+    return f"Rp {value:,.0f}".replace(',', '.')
 
 
 # ─── Routes: Auth ────────────────────────────────────────────────────────────
@@ -376,6 +500,11 @@ def dashboard():
 
     pengaturan = db.execute(q("SELECT * FROM pengaturan LIMIT 1")).fetchone()
 
+    transaksi_nota_hari = db.execute(
+        q("SELECT COUNT(*) FROM nota WHERE tanggal=?"),
+        (today,)
+    ).fetchone()[0]
+
     return render_template('dashboard.html',
         total_barang=total_barang,
         total_stok=total_stok,
@@ -386,6 +515,7 @@ def dashboard():
         pengeluaran_bulan=pengeluaran_bulan,
         barang_stok_rendah=barang_stok_rendah,
         transaksi_terakhir=transaksi_terakhir,
+        transaksi_nota_hari=transaksi_nota_hari,
         pengaturan=pengaturan
     )
 
@@ -398,29 +528,56 @@ def barang_list():
     db = get_db()
     search = request.args.get('search', '')
     kategori_filter = request.args.get('kategori', '')
+    page = max(1, int(request.args.get('page', 1) or 1))
+    per_page = 20
 
-    query = """
+    where = " WHERE 1=1"
+    params = []
+    if search:
+        where += " AND (b.nama LIKE ? OR b.kode LIKE ?)"
+        params.extend([f'%{search}%', f'%{search}%'])
+    if kategori_filter:
+        where += " AND b.kategori_id = ?"
+        params.append(kategori_filter)
+
+    total = db.execute(q(f"SELECT COUNT(*) FROM barang b{where}"), params).fetchone()[0]
+    total_pages = max(1, (total + per_page - 1) // per_page)
+    page = min(page, total_pages)
+
+    query = f"""
         SELECT b.*, k.nama as nama_kategori
         FROM barang b
         LEFT JOIN kategori k ON b.kategori_id = k.id
-        WHERE 1=1
+        {where}
+        ORDER BY b.nama ASC
+        LIMIT {per_page} OFFSET {(page - 1) * per_page}
     """
-    params = []
-
-    if search:
-        query += " AND (b.nama LIKE ? OR b.kode LIKE ?)"
-        params.extend([f'%{search}%', f'%{search}%'])
-
-    if kategori_filter:
-        query += " AND b.kategori_id = ?"
-        params.append(kategori_filter)
-
-    query += " ORDER BY b.nama ASC"
     barang = db.execute(q(query), params).fetchall()
     kategori = db.execute(q("SELECT * FROM kategori ORDER BY nama")).fetchall()
+    satuan = db.execute(q("SELECT * FROM satuan ORDER BY nama")).fetchall()
+    stok_menipis = db.execute(q("SELECT COUNT(*) FROM barang WHERE stok <= 5")).fetchone()[0]
+    kategori_aktif = db.execute(q("SELECT COUNT(DISTINCT kategori_id) FROM barang WHERE kategori_id IS NOT NULL")).fetchone()[0]
 
-    return render_template('barang.html', barang=barang, kategori=kategori,
-                           search=search, kategori_filter=kategori_filter)
+    return render_template('barang.html', barang=barang, kategori=kategori, satuan=satuan,
+                           search=search, kategori_filter=kategori_filter,
+                           page=page, total_pages=total_pages, total=total,
+                           stok_menipis=stok_menipis, kategori_aktif=kategori_aktif)
+
+
+UPLOAD_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static', 'uploads')
+
+
+def simpan_foto(file_storage):
+    """Simpan foto upload ke static/uploads dan kembalikan nama filenya."""
+    if not file_storage or not file_storage.filename:
+        return ''
+    ekstensi = os.path.splitext(file_storage.filename)[1].lower()
+    if ekstensi not in ('.jpg', '.jpeg', '.png', '.webp'):
+        return ''
+    os.makedirs(UPLOAD_DIR, exist_ok=True)
+    nama = secrets.token_hex(8) + ekstensi
+    file_storage.save(os.path.join(UPLOAD_DIR, nama))
+    return nama
 
 
 @app.route('/barang/tambah', methods=['POST'])
@@ -434,6 +591,7 @@ def barang_tambah():
     harga_jual = request.form.get('harga_jual', '0') or 0
     stok = request.form.get('stok', '0') or 0
     satuan = request.form.get('satuan', 'pcs')
+    foto = simpan_foto(request.files.get('foto'))
 
     if not kode or not nama:
         flash('Kode dan nama barang wajib diisi', 'danger')
@@ -445,8 +603,8 @@ def barang_tambah():
         return redirect(url_for('barang_list'))
 
     db.execute(
-        q("INSERT INTO barang (kode, nama, kategori_id, harga_beli, harga_jual, stok, satuan) VALUES (?,?,?,?,?,?,?)"),
-        (kode, nama, kategori_id, float(harga_beli), float(harga_jual), int(stok), satuan)
+        q("INSERT INTO barang (kode, nama, kategori_id, harga_beli, harga_jual, stok, satuan, foto) VALUES (?,?,?,?,?,?,?,?)"),
+        (kode, nama, kategori_id, float(harga_beli), float(harga_jual), int(stok), satuan, foto)
     )
     db.commit()
     flash(f'Barang "{nama}" berhasil ditambahkan', 'success')
@@ -464,10 +622,17 @@ def barang_edit(id):
     stok = request.form.get('stok', '0') or 0
     satuan = request.form.get('satuan', 'pcs')
 
-    db.execute(
-        q("UPDATE barang SET nama=?, kategori_id=?, harga_beli=?, harga_jual=?, stok=?, satuan=? WHERE id=?"),
-        (nama, kategori_id, float(harga_beli), float(harga_jual), int(stok), satuan, id)
-    )
+    foto = simpan_foto(request.files.get('foto'))
+    if foto:
+        db.execute(
+            q("UPDATE barang SET nama=?, kategori_id=?, harga_beli=?, harga_jual=?, stok=?, satuan=?, foto=? WHERE id=?"),
+            (nama, kategori_id, float(harga_beli), float(harga_jual), int(stok), satuan, foto, id)
+        )
+    else:
+        db.execute(
+            q("UPDATE barang SET nama=?, kategori_id=?, harga_beli=?, harga_jual=?, stok=?, satuan=? WHERE id=?"),
+            (nama, kategori_id, float(harga_beli), float(harga_jual), int(stok), satuan, id)
+        )
     db.commit()
     flash('Barang berhasil diupdate', 'success')
     return redirect(url_for('barang_list'))
@@ -481,9 +646,18 @@ def barang_hapus(id):
         return redirect(url_for('barang_list'))
 
     db = get_db()
+    barang = db.execute(q("SELECT foto FROM barang WHERE id = ?"), (id,)).fetchone()
+    # Lepaskan riwayat nota dari barang (nama barang tetap tersimpan di nota)
+    db.execute(q("UPDATE nota_item SET barang_id = NULL WHERE barang_id = ?"), (id,))
+    # Hapus pemesanan yang masih terkait barang ini
+    db.execute(q("DELETE FROM pemesanan WHERE barang_id = ?"), (id,))
     db.execute(q("DELETE FROM stok_log WHERE barang_id = ?"), (id,))
     db.execute(q("DELETE FROM barang WHERE id = ?"), (id,))
     db.commit()
+    if barang and barang['foto']:
+        path = os.path.join(UPLOAD_DIR, barang['foto'])
+        if os.path.exists(path):
+            os.remove(path)
     flash('Barang berhasil dihapus', 'success')
     return redirect(url_for('barang_list'))
 
@@ -496,18 +670,18 @@ def kategori_tambah():
     nama = request.form['nama'].strip()
     if not nama:
         flash('Nama kategori wajib diisi', 'danger')
-        return redirect(url_for('barang_list'))
+        return redirect(url_for('kategori_page'))
 
     db = get_db()
     existing = db.execute(q("SELECT id FROM kategori WHERE nama = ?"), (nama,)).fetchone()
     if existing:
         flash('Kategori sudah ada', 'danger')
-        return redirect(url_for('barang_list'))
+        return redirect(url_for('kategori_page'))
 
     db.execute(q("INSERT INTO kategori (nama) VALUES (?)"), (nama,))
     db.commit()
     flash(f'Kategori "{nama}" berhasil ditambahkan', 'success')
-    return redirect(url_for('barang_list'))
+    return redirect(url_for('kategori_page'))
 
 
 # ─── Routes: Barang Masuk / Keluar ──────────────────────────────────────────
@@ -615,9 +789,20 @@ def keuangan_page():
         (bulan,)
     ).fetchone()[0]
 
+    # Peta no_nota -> id nota untuk transaksi penjualan, agar baris riwayat bisa diklik
+    nota_ids = {}
+    for t in transaksi:
+        if 'nota' in (t['keterangan'] or ''):
+            m = re.search(r'nota (INV-[\d-]+)', t['keterangan'] or '')
+            if m:
+                row = db.execute(q("SELECT id FROM nota WHERE no_nota = ?"), (m.group(1),)).fetchone()
+                if row:
+                    nota_ids[t['id']] = row[0]
+
     return render_template('keuangan.html',
         transaksi=transaksi, bulan=bulan, jenis_filter=jenis_filter,
-        total_pemasukan=total_pemasukan, total_pengeluaran=total_pengeluaran
+        total_pemasukan=total_pemasukan, total_pengeluaran=total_pengeluaran,
+        nota_ids=nota_ids
     )
 
 
@@ -643,6 +828,8 @@ def keuangan_tambah():
     )
     db.commit()
     flash(f'{jenis.capitalize()} berhasil dicatat', 'success')
+    if jenis == 'pengeluaran':
+        return redirect(url_for('keuangan_page', jenis='pengeluaran'))
     return redirect(url_for('keuangan_page'))
 
 
@@ -770,6 +957,313 @@ def tambah_user():
     return redirect(url_for('pengaturan_page'))
 
 
+# ─── Routes: Nota / Penjualan ───────────────────────────────────────────────
+
+def buat_no_nota(db):
+    today = date.today().strftime('%Y%m%d')
+    row = db.execute(q("SELECT COUNT(*) FROM nota WHERE no_nota LIKE ?"), (f'INV-{today}-%',)).fetchone()[0]
+    return f"INV-{today}-{row + 1:03d}"
+
+
+@app.route('/nota')
+@login_required
+def nota_buat():
+    db = get_db()
+    barang = db.execute(q("""
+        SELECT b.*, k.nama as nama_kategori
+        FROM barang b
+        LEFT JOIN kategori k ON b.kategori_id = k.id
+        ORDER BY b.nama ASC
+    """)).fetchall()
+    kategori = db.execute(q("SELECT * FROM kategori ORDER BY nama")).fetchall()
+    return render_template('nota_buat.html', barang=barang, kategori=kategori)
+
+
+@app.route('/nota/simpan', methods=['POST'])
+@login_required
+def nota_simpan():
+    db = get_db()
+    try:
+        items = json.loads(request.form.get('items', '[]'))
+    except ValueError:
+        flash('Data nota tidak valid', 'danger')
+        return redirect(url_for('nota_buat'))
+
+    if not items:
+        flash('Nota kosong. Tambahkan minimal satu barang', 'danger')
+        return redirect(url_for('nota_buat'))
+
+    pelanggan = request.form.get('pelanggan', 'Umum').strip() or 'Umum'
+    metode = request.form.get('metode', 'tunai')
+    if metode not in ('tunai', 'transfer', 'qris'):
+        metode = 'tunai'
+    status = 'lunas'
+    try:
+        diskon = float(request.form.get('diskon', 0) or 0)
+    except (TypeError, ValueError):
+        diskon = 0
+
+    # Validasi stok & hitung total
+    total = 0
+    barang_cache = {}
+    for it in items:
+        b = db.execute(q("SELECT * FROM barang WHERE id = ?"), (it['id'],)).fetchone()
+        if not b:
+            flash('Ada barang yang tidak ditemukan', 'danger')
+            return redirect(url_for('nota_buat'))
+        qty = int(it.get('qty', 0))
+        if qty <= 0:
+            continue
+        if b['stok'] < qty:
+            flash(f'Stok "{b["nama"]}" tidak mencukupi. Sisa: {b["stok"]}', 'danger')
+            return redirect(url_for('nota_buat'))
+        subtotal = b['harga_jual'] * qty
+        total += subtotal
+        barang_cache[it['id']] = (b, qty, subtotal)
+
+    if total <= 0:
+        flash('Nota kosong. Tambahkan minimal satu barang', 'danger')
+        return redirect(url_for('nota_buat'))
+
+    total_akhir = max(0, total - diskon)
+    no_nota = buat_no_nota(db)
+
+    db.execute(
+        q("INSERT INTO nota (no_nota, pelanggan, total, diskon, metode, status, user_id) VALUES (?,?,?,?,?,?,?)"),
+        (no_nota, pelanggan, total_akhir, diskon, metode, status, session['user_id'])
+    )
+    nota_id = db.execute(q("SELECT id FROM nota WHERE no_nota = ?"), (no_nota,)).fetchone()[0]
+
+    for bid, (b, qty, subtotal) in barang_cache.items():
+        db.execute(
+            q("INSERT INTO nota_item (nota_id, barang_id, nama_barang, harga, qty, subtotal) VALUES (?,?,?,?,?,?)"),
+            (nota_id, b['id'], b['nama'], b['harga_jual'], qty, subtotal)
+        )
+        db.execute(q("UPDATE barang SET stok = stok - ? WHERE id = ?"), (qty, b['id']))
+        db.execute(
+            q("INSERT INTO stok_log (barang_id, jenis, jumlah, keterangan, user_id) VALUES (?, 'keluar', ?, ?, ?)"),
+            (b['id'], qty, f'Penjualan nota {no_nota}', session['user_id'])
+        )
+
+    db.execute(
+        q("INSERT INTO transaksi (jenis, jumlah, keterangan, user_id) VALUES ('pemasukan', ?, ?, ?)"),
+        (total_akhir, f'Penjualan nota {no_nota} - {pelanggan}', session['user_id'])
+    )
+    db.commit()
+    return redirect(url_for('nota_cetak', id=nota_id))
+
+
+@app.route('/nota/daftar')
+@login_required
+def nota_daftar():
+    db = get_db()
+    notas = db.execute(q("""
+        SELECT n.*, u.username, COUNT(ni.id) as jumlah_item
+        FROM nota n
+        LEFT JOIN users u ON n.user_id = u.id
+        LEFT JOIN nota_item ni ON ni.nota_id = n.id
+        GROUP BY n.id
+        ORDER BY n.id DESC LIMIT 100
+    """)).fetchall()
+    return render_template('nota_list.html', notas=notas)
+
+
+@app.route('/nota/cetak/<int:id>')
+@login_required
+def nota_cetak(id):
+    db = get_db()
+    nota = db.execute(q("SELECT * FROM nota WHERE id = ?"), (id,)).fetchone()
+    if not nota:
+        flash('Nota tidak ditemukan', 'danger')
+        return redirect(url_for('nota_daftar'))
+    items = db.execute(q("SELECT * FROM nota_item WHERE nota_id = ?"), (id,)).fetchall()
+    pengaturan = db.execute(q("SELECT * FROM pengaturan LIMIT 1")).fetchone()
+    return render_template('nota_cetak.html', nota=nota, items=items, pengaturan=pengaturan)
+
+
+@app.route('/nota/lunas/<int:id>')
+@login_required
+def nota_lunas(id):
+    if session.get('role') != 'admin':
+        flash('Hanya admin yang bisa menandai nota lunas', 'danger')
+        return redirect(url_for('nota_daftar'))
+    db = get_db()
+    nota = db.execute(q("SELECT * FROM nota WHERE id = ? AND status = 'utang'"), (id,)).fetchone()
+    if not nota:
+        flash('Nota tidak ditemukan atau sudah lunas', 'danger')
+        return redirect(url_for('nota_daftar'))
+    db.execute(q("UPDATE nota SET status = 'lunas' WHERE id = ?"), (id,))
+    db.execute(
+        q("INSERT INTO transaksi (jenis, jumlah, keterangan, user_id) VALUES ('pemasukan', ?, ?, ?)"),
+        (nota['total'], f'Pelunasan nota {nota["no_nota"]} - {nota["pelanggan"]}', session['user_id'])
+    )
+    db.commit()
+    flash(f'Nota {nota["no_nota"]} ditandai lunas', 'success')
+    return redirect(url_for('nota_daftar'))
+
+
+# ─── Routes: Pemesanan Barang ───────────────────────────────────────────────
+
+@app.route('/pemesanan')
+@login_required
+def pemesanan_page():
+    db = get_db()
+    barang = db.execute(q("SELECT * FROM barang ORDER BY nama")).fetchall()
+    satuan_list = db.execute(q("SELECT * FROM satuan ORDER BY nama")).fetchall()
+    pesanan = db.execute(q("""
+        SELECT p.*, b.nama as nama_barang, b.kode, u.username
+        FROM pemesanan p
+        JOIN barang b ON p.barang_id = b.id
+        LEFT JOIN users u ON p.user_id = u.id
+        ORDER BY p.id DESC LIMIT 100
+    """)).fetchall()
+    return render_template('pemesanan.html', barang=barang, pesanan=pesanan, satuan_list=satuan_list)
+
+
+@app.route('/pemesanan/tambah', methods=['POST'])
+@login_required
+def pemesanan_tambah():
+    db = get_db()
+    try:
+        barang_id = int(request.form['barang_id'])
+        qty = int(request.form['qty'])
+    except (KeyError, TypeError, ValueError):
+        flash('Data pemesanan tidak valid', 'danger')
+        return redirect(url_for('pemesanan_page'))
+    supplier = request.form.get('supplier', '').strip()
+    satuan = request.form.get('satuan', 'pcs')
+    catat = 1 if request.form.get('catat_pengeluaran') == 'on' else 0
+
+    if qty <= 0:
+        flash('Jumlah harus lebih dari 0', 'danger')
+        return redirect(url_for('pemesanan_page'))
+
+    db.execute(
+        q("INSERT INTO pemesanan (barang_id, supplier, qty, satuan, catat_pengeluaran, user_id) VALUES (?,?,?,?,?,?)"),
+        (barang_id, supplier, qty, satuan, catat, session['user_id'])
+    )
+    db.commit()
+    flash('Pemesanan barang berhasil dicatat', 'success')
+    return redirect(url_for('pemesanan_page'))
+
+
+@app.route('/pemesanan/terima/<int:id>')
+@login_required
+def pemesanan_terima(id):
+    db = get_db()
+    p = db.execute(q("SELECT * FROM pemesanan WHERE id = ? AND status = 'dipesan'"), (id,)).fetchone()
+    if not p:
+        flash('Pemesanan tidak ditemukan atau sudah diproses', 'danger')
+        return redirect(url_for('pemesanan_page'))
+
+    b = db.execute(q("SELECT * FROM barang WHERE id = ?"), (p['barang_id'],)).fetchone()
+    db.execute(q("UPDATE barang SET stok = stok + ? WHERE id = ?"), (p['qty'], p['barang_id']))
+    db.execute(
+        q("INSERT INTO stok_log (barang_id, jenis, jumlah, keterangan, user_id) VALUES (?, 'masuk', ?, ?, ?)"),
+        (p['barang_id'], p['qty'], f'Penerimaan pemesanan #{id} dari {p["supplier"] or "supplier"}', session['user_id'])
+    )
+    if p['catat_pengeluaran'] and b:
+        db.execute(
+            q("INSERT INTO transaksi (jenis, jumlah, keterangan, user_id) VALUES ('pengeluaran', ?, ?, ?)"),
+            (b['harga_beli'] * p['qty'], f'Pembelian pemesanan #{id}: {b["nama"]} x{p["qty"]}', session['user_id'])
+        )
+    db.execute(q("UPDATE pemesanan SET status = 'diterima' WHERE id = ?"), (id,))
+    db.commit()
+    flash('Pemesanan diterima, stok barang bertambah', 'success')
+    return redirect(url_for('pemesanan_page'))
+
+
+@app.route('/pemesanan/batal/<int:id>')
+@login_required
+def pemesanan_batal(id):
+    db = get_db()
+    p = db.execute(q("SELECT * FROM pemesanan WHERE id = ? AND status = 'dipesan'"), (id,)).fetchone()
+    if not p:
+        flash('Pemesanan tidak ditemukan atau sudah diproses', 'danger')
+        return redirect(url_for('pemesanan_page'))
+    db.execute(q("UPDATE pemesanan SET status = 'batal' WHERE id = ?"), (id,))
+    db.commit()
+    flash('Pemesanan dibatalkan', 'info')
+    return redirect(url_for('pemesanan_page'))
+
+
+# ─── Routes: Kategori & Satuan ──────────────────────────────────────────────
+
+@app.route('/kategori')
+@login_required
+def kategori_page():
+    db = get_db()
+    kategori = db.execute(q("""
+        SELECT k.*, COUNT(b.id) as jumlah_barang
+        FROM kategori k
+        LEFT JOIN barang b ON b.kategori_id = k.id
+        GROUP BY k.id
+        ORDER BY k.nama
+    """)).fetchall()
+    satuan = db.execute(q("""
+        SELECT s.*, COUNT(b.id) as jumlah_barang
+        FROM satuan s
+        LEFT JOIN barang b ON b.satuan = s.nama
+        GROUP BY s.id
+        ORDER BY s.nama
+    """)).fetchall()
+    return render_template('kategori.html', kategori=kategori, satuan=satuan)
+
+
+@app.route('/kategori/hapus/<int:id>')
+@login_required
+def kategori_hapus(id):
+    if session.get('role') != 'admin':
+        flash('Hanya admin yang bisa menghapus kategori', 'danger')
+        return redirect(url_for('kategori_page'))
+    db = get_db()
+    dipakai = db.execute(q("SELECT COUNT(*) FROM barang WHERE kategori_id = ?"), (id,)).fetchone()[0]
+    if dipakai:
+        flash('Kategori masih dipakai oleh barang, tidak bisa dihapus', 'danger')
+        return redirect(url_for('kategori_page'))
+    db.execute(q("DELETE FROM kategori WHERE id = ?"), (id,))
+    db.commit()
+    flash('Kategori berhasil dihapus', 'success')
+    return redirect(url_for('kategori_page'))
+
+
+@app.route('/satuan/tambah', methods=['POST'])
+@login_required
+def satuan_tambah():
+    nama = request.form['nama'].strip().lower()
+    if not nama:
+        flash('Nama satuan wajib diisi', 'danger')
+        return redirect(url_for('kategori_page'))
+    db = get_db()
+    existing = db.execute(q("SELECT id FROM satuan WHERE nama = ?"), (nama,)).fetchone()
+    if existing:
+        flash('Satuan sudah ada', 'danger')
+        return redirect(url_for('kategori_page'))
+    db.execute(q("INSERT INTO satuan (nama) VALUES (?)"), (nama,))
+    db.commit()
+    flash(f'Satuan "{nama}" berhasil ditambahkan', 'success')
+    return redirect(url_for('kategori_page'))
+
+
+@app.route('/satuan/hapus/<int:id>')
+@login_required
+def satuan_hapus(id):
+    if session.get('role') != 'admin':
+        flash('Hanya admin yang bisa menghapus satuan', 'danger')
+        return redirect(url_for('kategori_page'))
+    db = get_db()
+    sat = db.execute(q("SELECT nama FROM satuan WHERE id = ?"), (id,)).fetchone()
+    if sat:
+        dipakai = db.execute(q("SELECT COUNT(*) FROM barang WHERE satuan = ?"), (sat['nama'],)).fetchone()[0]
+        if dipakai:
+            flash('Satuan masih dipakai oleh barang, tidak bisa dihapus', 'danger')
+            return redirect(url_for('kategori_page'))
+    db.execute(q("DELETE FROM satuan WHERE id = ?"), (id,))
+    db.commit()
+    flash('Satuan berhasil dihapus', 'success')
+    return redirect(url_for('kategori_page'))
+
+
 # ─── Run ─────────────────────────────────────────────────────────────────────
 
 # Initialize the database when the app is loaded. This runs both under
@@ -781,7 +1275,6 @@ if __name__ == '__main__':
     print("=" * 50)
     print("  Toko Karunia Tambu - Sistem Manajemen")
     print("  Buka browser: http://127.0.0.1:5000")
-    print("  Login: admin / admin123")
     print("=" * 50)
     debug = os.environ.get('FLASK_DEBUG') == '1'
     app.run(host='0.0.0.0', port=5000, debug=debug)

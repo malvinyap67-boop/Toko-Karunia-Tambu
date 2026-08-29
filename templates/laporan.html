@@ -1,122 +1,101 @@
 {% extends "base.html" %}
 {% block title %}Laporan - Toko Karunia Tambu{% endblock %}
 {% block content %}
-<div class="page-header">
-    <h1>📋 Laporan</h1>
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <div>
+        <h1 class="text-3xl font-extrabold">Laporan</h1>
+        <p class="text-sm text-ink-variant mt-1">Ringkasan kinerja toko bulan {{ bulan }}.</p>
+    </div>
+    <form method="GET" class="flex items-center gap-2">
+        <input type="month" name="bulan" value="{{ bulan }}" class="px-3 py-2.5 bg-card border border-outline-variant/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/40">
+        <button type="submit" class="flex items-center gap-1 bg-brand hover:bg-brand-light text-white text-sm font-bold px-4 py-2.5 rounded-lg transition-colors">
+            <span class="material-symbols-outlined text-[18px]">monitoring</span>Lihat Laporan
+        </button>
+    </form>
 </div>
 
-<!-- Filter Bulan -->
-<div class="card" style="margin-bottom:20px;">
-    <div class="card-body">
-        <form method="GET" class="form-inline">
-            <label>Pilih Bulan:</label>
-            <input type="month" name="bulan" value="{{ bulan }}">
-            <button type="submit" class="btn btn-primary">📊 Lihat Laporan</button>
-        </form>
+<!-- Ringkasan -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div class="bg-card rounded-xl shadow-sm p-6 relative overflow-hidden">
+        <div class="absolute -right-8 -top-8 w-28 h-28 bg-green-600/5 rounded-full"></div>
+        <span class="text-[11px] font-bold uppercase tracking-wider text-ink-variant">Total Pemasukan</span>
+        <span class="text-2xl font-extrabold text-green-700 block mt-2">{{ total_pemasukan|rupiah }}</span>
     </div>
-</div>
-
-<!-- Ringkasan Keuangan -->
-<div class="stats-grid" style="grid-template-columns: repeat(3, 1fr);">
-    <div class="stat-card stat-green">
-        <div class="stat-icon">💰</div>
-        <div class="stat-info">
-            <h3>Rp {{ "{:,.0f}".format(total_pemasukan) }}</h3>
-            <p>Total Pemasukan</p>
-        </div>
+    <div class="bg-card rounded-xl shadow-sm p-6 relative overflow-hidden">
+        <div class="absolute -right-8 -top-8 w-28 h-28 bg-error/5 rounded-full"></div>
+        <span class="text-[11px] font-bold uppercase tracking-wider text-ink-variant">Total Pengeluaran</span>
+        <span class="text-2xl font-extrabold text-error block mt-2">{{ total_pengeluaran|rupiah }}</span>
     </div>
-    <div class="stat-card stat-red">
-        <div class="stat-icon">💸</div>
-        <div class="stat-info">
-            <h3>Rp {{ "{:,.0f}".format(total_pengeluaran) }}</h3>
-            <p>Total Pengeluaran</p>
-        </div>
-    </div>
-    <div class="stat-card {% if laba_bersih >= 0 %}stat-blue{% else %}stat-warning{% endif %}">
-        <div class="stat-icon">📊</div>
-        <div class="stat-info">
-            <h3>Rp {{ "{:,.0f}".format(laba_bersih) }}</h3>
-            <p>Laba Bersih</p>
-        </div>
+    <div class="bg-card rounded-xl shadow-sm p-6 relative overflow-hidden">
+        <div class="absolute -right-8 -top-8 w-28 h-28 bg-brand/5 rounded-full"></div>
+        <span class="text-[11px] font-bold uppercase tracking-wider text-ink-variant">Laba Bersih</span>
+        <span class="text-2xl font-extrabold {% if laba_bersih >= 0 %}text-brand{% else %}text-error{% endif %} block mt-2">{{ laba_bersih|rupiah }}</span>
     </div>
 </div>
 
-<div class="dashboard-grid">
+<div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
     <!-- Barang Terlaris -->
-    <div class="card">
-        <div class="card-header">
-            <h3>🏆 Barang Terlaris ({{ bulan }})</h3>
-        </div>
-        <div class="card-body table-responsive">
-            {% if barang_terlaris %}
-            <table>
+    <div class="bg-card rounded-xl shadow-sm p-6 self-start">
+        <h2 class="text-lg font-bold flex items-center gap-2 mb-4">
+            <span class="material-symbols-outlined text-brand">emoji_events</span>Barang Terlaris ({{ bulan }})
+        </h2>
+        <div class="overflow-x-auto thin-scroll">
+            <table class="w-full text-sm">
                 <thead>
-                    <tr>
-                        <th>Rank</th>
-                        <th>Kode</th>
-                        <th>Nama</th>
-                        <th>Terjual</th>
+                    <tr class="text-[10px] uppercase tracking-wider text-ink-variant border-b border-outline-variant/40">
+                        <th class="text-center py-2 font-bold">Rank</th>
+                        <th class="text-left py-2 font-bold">Kode</th>
+                        <th class="text-left py-2 font-bold">Nama</th>
+                        <th class="text-right py-2 font-bold">Terjual</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for b in barang_terlaris %}
-                    <tr>
-                        <td>
-                            {% if loop.index == 1 %}🥇
-                            {% elif loop.index == 2 %}🥈
-                            {% elif loop.index == 3 %}🥉
-                            {% else %}{{ loop.index }}
-                            {% endif %}
+                    <tr class="border-b border-outline-variant/30">
+                        <td class="py-2.5 text-center">
+                            <span class="inline-flex w-7 h-7 rounded-full items-center justify-center text-xs font-bold
+                                 {% if loop.index == 1 %}bg-amber-100 text-amber-700{% elif loop.index == 2 %}bg-gray-200 text-gray-600{% elif loop.index == 3 %}bg-orange-100 text-orange-700{% else %}bg-surface text-ink-variant{% endif %}">{{ loop.index }}</span>
                         </td>
-                        <td>{{ b.kode }}</td>
-                        <td>{{ b.nama }}</td>
-                        <td><strong>{{ b.total }}</strong></td>
+                        <td class="py-2.5 font-mono text-brand">{{ b.kode }}</td>
+                        <td class="py-2.5 font-semibold">{{ b.nama }}</td>
+                        <td class="py-2.5 text-right font-bold">{{ b.total }}</td>
                     </tr>
+                    {% else %}
+                    <tr><td colspan="4" class="py-8 text-center text-ink-variant/60">Belum ada penjualan bulan ini</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
-            {% else %}
-            <p class="text-muted text-center">Belum ada penjualan bulan ini</p>
-            {% endif %}
         </div>
     </div>
 
     <!-- Stok Saat Ini -->
-    <div class="card">
-        <div class="card-header">
-            <h3>📦 Stok Saat Ini</h3>
-        </div>
-        <div class="card-body table-responsive">
-            {% if stok_saat_ini %}
-            <table>
-                <thead>
-                    <tr>
-                        <th>Kode</th>
-                        <th>Nama</th>
-                        <th>Kategori</th>
-                        <th>Stok</th>
-                        <th>Satuan</th>
+    <div class="bg-card rounded-xl shadow-sm p-6 self-start">
+        <h2 class="text-lg font-bold flex items-center gap-2 mb-4">
+            <span class="material-symbols-outlined text-brand">inventory_2</span>Stok Saat Ini
+        </h2>
+        <div class="overflow-x-auto max-h-[480px] thin-scroll">
+            <table class="w-full text-sm">
+                <thead class="sticky top-0 bg-card">
+                    <tr class="text-[10px] uppercase tracking-wider text-ink-variant border-b border-outline-variant/40">
+                        <th class="text-left py-2 font-bold">Kode</th>
+                        <th class="text-left py-2 font-bold">Nama</th>
+                        <th class="text-center py-2 font-bold">Kategori</th>
+                        <th class="text-right py-2 font-bold">Stok</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for b in stok_saat_ini %}
-                    <tr>
-                        <td>{{ b.kode }}</td>
-                        <td>{{ b.nama }}</td>
-                        <td>{{ b.kategori or '-' }}</td>
-                        <td>
-                            <span class="badge {% if b.stok == 0 %}badge-danger{% elif b.stok <= 5 %}badge-warning{% else %}badge-success{% endif %}">
-                                {{ b.stok }}
-                            </span>
-                        </td>
-                        <td>{{ b.satuan }}</td>
+                    <tr class="border-b border-outline-variant/30">
+                        <td class="py-2.5 font-mono text-brand">{{ b.kode }}</td>
+                        <td class="py-2.5 font-semibold">{{ b.nama }}</td>
+                        <td class="py-2.5 text-center text-ink-variant">{{ b.kategori or '-' }}</td>
+                        <td class="py-2.5 text-right font-bold {% if b.stok == 0 %}text-error{% elif b.stok <= 5 %}text-amber-600{% endif %}">{{ b.stok }} {{ b.satuan }}</td>
                     </tr>
+                    {% else %}
+                    <tr><td colspan="4" class="py-8 text-center text-ink-variant/60">Belum ada data barang</td></tr>
                     {% endfor %}
                 </tbody>
             </table>
-            {% else %}
-            <p class="text-muted text-center">Belum ada data barang</p>
-            {% endif %}
         </div>
     </div>
 </div>

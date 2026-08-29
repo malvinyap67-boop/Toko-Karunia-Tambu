@@ -1,206 +1,308 @@
 {% extends "base.html" %}
-{% block title %}Barang - Toko Karunia Tambu{% endblock %}
+{% block title %}Inventaris - Toko Karunia Tambu{% endblock %}
 {% block content %}
-<div class="page-header">
-    <h1>📦 Manajemen Barang</h1>
-    <button class="btn btn-primary" onclick="document.getElementById('tambahBarang').style.display='block'">
-        + Tambah Barang
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <div>
+        <h1 class="text-3xl font-extrabold">Inventaris</h1>
+        <p class="text-sm text-ink-variant mt-1">Kelola daftar barang, pantau stok, dan perbarui harga.</p>
+    </div>
+    <button onclick="document.getElementById('tambahBarang').classList.toggle('hidden')"
+            class="flex items-center gap-2 bg-brand hover:bg-brand-light text-white text-sm font-bold px-5 py-3 rounded-lg transition-colors shadow-md shadow-brand/30">
+        <span class="material-symbols-outlined text-[18px]">add</span>INPUT BARANG
     </button>
 </div>
 
+<!-- Ringkasan -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div class="bg-card rounded-xl shadow-sm p-5 flex items-center gap-4">
+        <div class="w-12 h-12 rounded-full bg-brand flex items-center justify-center text-white shrink-0">
+            <span class="material-symbols-outlined">inventory_2</span>
+        </div>
+        <div>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-ink-variant">Total Item</span>
+            <span class="text-2xl font-extrabold block">{{ total }}</span>
+        </div>
+    </div>
+    <div class="bg-card rounded-xl shadow-sm p-5 flex items-center gap-4">
+        <div class="w-12 h-12 rounded-full bg-error-bg flex items-center justify-center text-error shrink-0">
+            <span class="material-symbols-outlined">warning</span>
+        </div>
+        <div>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-ink-variant">Stok Menipis</span>
+            <span class="text-2xl font-extrabold text-error block">{{ stok_menipis }}</span>
+        </div>
+    </div>
+    <div class="bg-card rounded-xl shadow-sm p-5 flex items-center gap-4">
+        <div class="w-12 h-12 rounded-full bg-brand-fixed/40 flex items-center justify-center text-brand shrink-0">
+            <span class="material-symbols-outlined">category</span>
+        </div>
+        <div>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-ink-variant">Kategori Aktif</span>
+            <span class="text-2xl font-extrabold block">{{ kategori_aktif }}</span>
+        </div>
+    </div>
+</div>
+
 <!-- Form Tambah Barang -->
-<div id="tambahBarang" class="card" style="display:none; margin-bottom:20px;">
-    <div class="card-header">
-        <h3>Tambah Barang Baru</h3>
-        <button class="btn btn-sm" onclick="this.parentElement.parentElement.style.display='none'">✕</button>
-    </div>
-    <div class="card-body">
-        <form method="POST" action="{{ url_for('barang_tambah') }}">
-            <div class="form-grid">
-                <div class="form-group">
-                    <label>Kode Barang *</label>
-                    <input type="text" name="kode" placeholder="BRG001" required>
-                </div>
-                <div class="form-group">
-                    <label>Nama Barang *</label>
-                    <input type="text" name="nama" placeholder="Nama barang" required>
-                </div>
-                <div class="form-group">
-                    <label>Kategori</label>
-                    <select name="kategori_id">
-                        <option value="">-- Pilih Kategori --</option>
-                        {% for k in kategori %}
-                        <option value="{{ k.id }}">{{ k.nama }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Satuan</label>
-                    <select name="satuan">
-                        <option value="pcs">Pcs</option>
-                        <option value="kg">Kg</option>
-                        <option value="liter">Liter</option>
-                        <option value="box">Box</option>
-                        <option value="lusin">Lusin</option>
-                        <option value="rim">Rim</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Harga Beli (Rp)</label>
-                    <input type="number" name="harga_beli" placeholder="0" min="0">
-                </div>
-                <div class="form-group">
-                    <label>Harga Jual (Rp)</label>
-                    <input type="number" name="harga_jual" placeholder="0" min="0">
-                </div>
-                <div class="form-group">
-                    <label>Stok Awal</label>
-                    <input type="number" name="stok" placeholder="0" min="0" value="0">
-                </div>
+<div id="tambahBarang" class="hidden bg-card rounded-xl shadow-sm p-6 mb-6">
+    <h2 class="text-lg font-bold mb-4">Tambah Barang Baru</h2>
+    <form method="POST" action="{{ url_for('barang_tambah') }}" enctype="multipart/form-data">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+                <label class="block text-[10px] font-bold uppercase tracking-wider text-ink-variant mb-1.5">Kode Barang *</label>
+                <input type="text" name="kode" placeholder="BRG001" required class="w-full px-3 py-2.5 bg-surface border border-outline-variant/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/40">
             </div>
-            <button type="submit" class="btn btn-primary">💾 Simpan</button>
-        </form>
-    </div>
+            <div>
+                <label class="block text-[10px] font-bold uppercase tracking-wider text-ink-variant mb-1.5">Nama Barang *</label>
+                <input type="text" name="nama" placeholder="Nama barang" required class="w-full px-3 py-2.5 bg-surface border border-outline-variant/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/40">
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold uppercase tracking-wider text-ink-variant mb-1.5">Kategori</label>
+                <select name="kategori_id" class="w-full px-3 py-2.5 bg-surface border border-outline-variant/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/40">
+                    <option value="">-- Pilih Kategori --</option>
+                    {% for k in kategori %}
+                    <option value="{{ k.id }}">{{ k.nama }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold uppercase tracking-wider text-ink-variant mb-1.5">Satuan</label>
+                <select name="satuan" class="w-full px-3 py-2.5 bg-surface border border-outline-variant/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/40">
+                    {% for s in satuan %}
+                    <option value="{{ s.nama }}" {% if s.nama == 'pcs' %}selected{% endif %}>{{ s.nama|capitalize }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold uppercase tracking-wider text-ink-variant mb-1.5">Harga Beli (Rp)</label>
+                <input type="number" name="harga_beli" placeholder="0" min="0" class="w-full px-3 py-2.5 bg-surface border border-outline-variant/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/40">
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold uppercase tracking-wider text-ink-variant mb-1.5">Harga Jual (Rp)</label>
+                <input type="number" name="harga_jual" placeholder="0" min="0" class="w-full px-3 py-2.5 bg-surface border border-outline-variant/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/40">
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold uppercase tracking-wider text-ink-variant mb-1.5">Jumlah</label>
+                <input type="number" name="stok" placeholder="0" min="0" value="0" class="w-full px-3 py-2.5 bg-surface border border-outline-variant/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/40">
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold uppercase tracking-wider text-ink-variant mb-1.5">Foto Barang</label>
+                <input type="file" name="foto" accept="image/*" capture="environment"
+                       class="w-full text-sm text-ink-variant file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:bg-brand file:text-white file:text-xs file:font-bold file:cursor-pointer cursor-pointer">
+                <p class="text-[10px] text-ink-variant mt-1">Ambil dengan kamera atau pilih dari galeri.</p>
+            </div>
+            <div class="flex items-end lg:col-span-4">
+                <button type="submit" class="flex items-center gap-2 bg-brand hover:bg-brand-light text-white font-bold px-6 py-2.5 rounded-lg transition-colors">
+                    <span class="material-symbols-outlined text-[18px]">save</span>Simpan
+                </button>
+            </div>
+        </div>
+    </form>
 </div>
 
-<!-- Filter & Search -->
-<div class="card" style="margin-bottom:20px;">
-    <div class="card-body">
-        <form method="GET" class="form-inline">
-            <input type="text" name="search" placeholder="🔍 Cari barang..." value="{{ search }}">
-            <select name="kategori">
-                <option value="">Semua Kategori</option>
-                {% for k in kategori %}
-                <option value="{{ k.id }}" {% if kategori_filter == k.id|string %}selected{% endif %}>{{ k.nama }}</option>
-                {% endfor %}
-            </select>
-            <button type="submit" class="btn btn-primary">Cari</button>
-            <a href="{{ url_for('barang_list') }}" class="btn">Reset</a>
-        </form>
+<!-- Filter -->
+<div class="bg-card rounded-xl shadow-sm px-5 py-4 mb-4 flex flex-col lg:flex-row lg:items-center gap-3">
+    <span class="text-[10px] font-bold uppercase tracking-wider text-ink-variant shrink-0">Filter Kategori:</span>
+    <div class="flex flex-wrap gap-2">
+        <a href="{{ url_for('barang_list', search=search) }}" class="px-4 py-1.5 rounded-full text-xs font-bold transition-colors {% if not kategori_filter %}bg-brand text-white{% else %}bg-surface text-ink-variant hover:bg-brand-fixed{% endif %}">Semua</a>
+        {% for k in kategori %}
+        <a href="{{ url_for('barang_list', search=search, kategori=k.id) }}" class="px-4 py-1.5 rounded-full text-xs font-bold transition-colors {% if kategori_filter == k.id|string %}bg-brand text-white{% else %}bg-surface text-ink-variant hover:bg-brand-fixed{% endif %}">{{ k.nama }}</a>
+        {% endfor %}
     </div>
+    <form method="GET" class="lg:ml-auto relative w-full lg:w-72">
+        {% if kategori_filter %}<input type="hidden" name="kategori" value="{{ kategori_filter }}">{% endif %}
+        <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-ink-variant text-[18px]">search</span>
+        <input type="text" name="search" value="{{ search }}" placeholder="Cari kode atau nama barang..."
+               class="w-full pl-9 pr-4 py-2 bg-surface border border-outline-variant/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/40">
+    </form>
 </div>
 
-<!-- Daftar Barang -->
-<div class="card">
-    <div class="card-header">
-        <h3>Daftar Barang ({{ barang|length }} item)</h3>
-    </div>
-    <div class="card-body table-responsive">
-        {% if barang %}
-        <table>
+<!-- Tabel Barang -->
+<div class="bg-card rounded-xl shadow-sm overflow-hidden">
+    <div class="overflow-x-auto thin-scroll">
+        <table class="w-full text-sm min-w-[860px]">
             <thead>
-                <tr>
-                    <th>No</th>
-                    <th>Kode</th>
-                    <th>Nama</th>
-                    <th>Kategori</th>
-                    <th>Harga Beli</th>
-                    <th>Harga Jual</th>
-                    <th>Stok</th>
-                    <th>Satuan</th>
-                    <th>Aksi</th>
+                <tr class="text-[10px] uppercase tracking-wider text-ink-variant bg-surface border-b border-outline-variant/40">
+                    <th class="text-left px-5 py-3 font-bold">Kode</th>
+                    <th class="text-left px-5 py-3 font-bold">Nama Barang</th>
+                    <th class="text-center px-5 py-3 font-bold">Kategori</th>
+                    <th class="text-center px-5 py-3 font-bold">Stok</th>
+                    {% if session.get('role') == 'admin' %}
+                    <th class="text-right px-5 py-3 font-bold">Harga Beli</th>
+                    {% endif %}
+                    <th class="text-right px-5 py-3 font-bold">Harga Jual</th>
+                    <th class="px-5 py-3 text-right font-bold">Aksi</th>
                 </tr>
             </thead>
             <tbody>
                 {% for b in barang %}
-                <tr>
-                    <td>{{ loop.index }}</td>
-                    <td><strong>{{ b.kode }}</strong></td>
-                    <td>{{ b.nama }}</td>
-                    <td>{{ b.nama_kategori or '-' }}</td>
-                    <td>Rp {{ "{:,.0f}".format(b.harga_beli) }}</td>
-                    <td>Rp {{ "{:,.0f}".format(b.harga_jual) }}</td>
-                    <td>
-                        <span class="badge {% if b.stok == 0 %}badge-danger{% elif b.stok <= 5 %}badge-warning{% else %}badge-success{% endif %}">
-                            {{ b.stok }}
+                <tr class="border-b border-outline-variant/30 hover:bg-surface/60 transition-colors">
+                    <td class="px-5 py-3.5 font-mono font-semibold text-brand">{{ b.kode }}</td>
+                    <td class="px-5 py-3.5 font-semibold">
+                        <div class="flex items-center gap-3">
+                            {% if b.foto %}
+                            <img src="{{ url_for('static', filename='uploads/' + b.foto) }}" alt="" class="w-9 h-9 rounded-lg object-cover border border-outline-variant/40">
+                            {% else %}
+                            <span class="w-9 h-9 rounded-lg bg-surface flex items-center justify-center text-ink-variant/40 shrink-0">
+                                <span class="material-symbols-outlined text-[18px]">image</span>
+                            </span>
+                            {% endif %}
+                            {{ b.nama }}
+                        </div>
+                    </td>
+                    <td class="px-5 py-3.5 text-center">
+                        <span class="inline-block text-[10px] font-bold rounded-full px-2.5 py-1 bg-brand-fixed/40 text-brand">{{ b.nama_kategori or '-' }}</span>
+                    </td>
+                    <td class="px-5 py-3.5 text-center">
+                        <span class="font-bold {% if b.stok == 0 %}text-error{% elif b.stok <= 5 %}text-amber-600{% else %}text-ink{% endif %}">
+                            {% if b.stok <= 5 %}<span class="material-symbols-outlined text-[14px] align-middle text-error">warning</span>{% endif %}
+                            {{ b.stok }} {{ b.satuan }}
                         </span>
                     </td>
-                    <td>{{ b.satuan }}</td>
-                    <td>
-                        <button class="btn btn-sm btn-primary" onclick="editBarang({{ b.id }}, '{{ b.kode }}', '{{ b.nama }}', {{ b.kategori_id or 0 }}, {{ b.harga_beli }}, {{ b.harga_jual }}, {{ b.stok }}, '{{ b.satuan }}')">Edit</button>
+                    {% if session.get('role') == 'admin' %}
+                    <td class="px-5 py-3.5 text-right text-ink-variant">{{ b.harga_beli|rupiah }}</td>
+                    {% endif %}
+                    <td class="px-5 py-3.5 text-right font-bold">{{ b.harga_jual|rupiah }}</td>
+                    <td class="px-5 py-3.5 text-right whitespace-nowrap">
+                        <button onclick='editBarang({{ b.id }}, {{ b.nama|tojson }}, {{ b.kategori_id or 0 }}, {{ b.harga_beli }}, {{ b.harga_jual }}, {{ b.stok }}, {{ b.satuan|tojson }}, {{ (b.foto or '')|tojson }})'
+                                class="inline-flex p-2 rounded-lg text-ink-variant hover:bg-brand-fixed hover:text-brand transition-colors" title="Edit">
+                            <span class="material-symbols-outlined text-[18px]">edit</span>
+                        </button>
                         {% if session.get('role') == 'admin' %}
-                        <a href="{{ url_for('barang_hapus', id=b.id) }}" class="btn btn-sm btn-danger"
-                           onclick="return confirm('Hapus barang {{ b.nama }}?')">Hapus</a>
+                        <a href="{{ url_for('barang_hapus', id=b.id) }}" onclick="return confirm('Hapus barang {{ b.nama }}?')"
+                           class="inline-flex p-2 rounded-lg text-error hover:bg-red-50 transition-colors" title="Hapus">
+                            <span class="material-symbols-outlined text-[18px]">delete</span>
+                        </a>
                         {% endif %}
                     </td>
                 </tr>
+                {% else %}
+                <tr><td colspan="8" class="px-5 py-10 text-center text-ink-variant/60">Belum ada data barang</td></tr>
                 {% endfor %}
             </tbody>
         </table>
-        {% else %}
-        <p class="text-muted text-center">Belum ada data barang</p>
+    </div>
+
+    <!-- Pagination -->
+    <div class="flex items-center justify-between px-5 py-4 border-t border-outline-variant/40 text-sm">
+        <span class="text-ink-variant">Menampilkan {{ barang|length }} dari {{ total }} barang</span>
+        {% if total_pages > 1 %}
+        <div class="flex items-center gap-1">
+            {% for p_num in range(1, total_pages + 1) %}
+                {% if p_num <= 3 or p_num > total_pages - 2 or (p_num >= page - 1 and p_num <= page + 1) %}
+                <a href="{{ url_for('barang_list', search=search, kategori=kategori_filter, page=p_num) }}"
+                   class="w-9 h-9 flex items-center justify-center rounded-full text-sm font-semibold transition-colors
+                   {% if p_num == page %}bg-brand text-white{% else %}hover:bg-surface text-ink-variant{% endif %}">{{ p_num }}</a>
+                {% elif p_num == 4 and page > 5 %}
+                <span class="px-1 text-ink-variant">…</span>
+                {% elif p_num == total_pages - 2 and page < total_pages - 4 %}
+                <span class="px-1 text-ink-variant">…</span>
+                {% endif %}
+            {% endfor %}
+        </div>
         {% endif %}
     </div>
 </div>
 
 <!-- Modal Edit -->
-<div id="editModal" class="modal" style="display:none;">
-    <div class="modal-content">
-        <div class="card-header">
-            <h3>Edit Barang</h3>
-            <button class="btn btn-sm" onclick="document.getElementById('editModal').style.display='none'">✕</button>
+<div id="editModal" class="modal fixed inset-0 z-[60] items-center justify-center bg-black/50 p-4">
+    <div class="bg-card rounded-xl shadow-xl w-full max-w-2xl p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-bold">Edit Barang</h2>
+            <button onclick="document.getElementById('editModal').classList.remove('open')" class="p-2 rounded-lg hover:bg-surface text-ink-variant">
+                <span class="material-symbols-outlined">close</span>
+            </button>
         </div>
-        <div class="card-body">
-            <form id="editForm" method="POST">
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label>Kode</label>
-                        <input type="text" id="edit_kode" readonly class="input-readonly">
-                    </div>
-                    <div class="form-group">
-                        <label>Nama</label>
-                        <input type="text" name="nama" id="edit_nama" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Kategori</label>
-                        <select name="kategori_id" id="edit_kategori">
-                            <option value="">-- Pilih --</option>
-                            {% for k in kategori %}
-                            <option value="{{ k.id }}">{{ k.nama }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Satuan</label>
-                        <select name="satuan" id="edit_satuan">
-                            <option value="pcs">Pcs</option>
-                            <option value="kg">Kg</option>
-                            <option value="liter">Liter</option>
-                            <option value="box">Box</option>
-                            <option value="lusin">Lusin</option>
-                            <option value="rim">Rim</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Harga Beli</label>
-                        <input type="number" name="harga_beli" id="edit_harga_beli" min="0">
-                    </div>
-                    <div class="form-group">
-                        <label>Harga Jual</label>
-                        <input type="number" name="harga_jual" id="edit_harga_jual" min="0">
-                    </div>
-                    <div class="form-group">
-                        <label>Stok</label>
-                        <input type="number" name="stok" id="edit_stok" min="0">
+        <form id="editForm" method="POST" enctype="multipart/form-data">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-wider text-ink-variant mb-1.5">Kode</label>
+                    <input type="text" id="edit_kode" readonly class="w-full px-3 py-2.5 bg-surface border border-outline-variant/50 rounded-lg text-sm text-ink-variant opacity-70">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-wider text-ink-variant mb-1.5">Nama</label>
+                    <input type="text" name="nama" id="edit_nama" required class="w-full px-3 py-2.5 bg-surface border border-outline-variant/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/40">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-wider text-ink-variant mb-1.5">Kategori</label>
+                    <select name="kategori_id" id="edit_kategori" class="w-full px-3 py-2.5 bg-surface border border-outline-variant/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/40">
+                        <option value="">-- Pilih --</option>
+                        {% for k in kategori %}
+                        <option value="{{ k.id }}">{{ k.nama }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-wider text-ink-variant mb-1.5">Satuan</label>
+                    <select name="satuan" id="edit_satuan" class="w-full px-3 py-2.5 bg-surface border border-outline-variant/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/40">
+                        {% for s in satuan %}
+                        <option value="{{ s.nama }}">{{ s.nama|capitalize }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-wider text-ink-variant mb-1.5">Harga Beli</label>
+                    <input type="number" name="harga_beli" id="edit_harga_beli" min="0" class="w-full px-3 py-2.5 bg-surface border border-outline-variant/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/40">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-wider text-ink-variant mb-1.5">Harga Jual</label>
+                    <input type="number" name="harga_jual" id="edit_harga_jual" min="0" class="w-full px-3 py-2.5 bg-surface border border-outline-variant/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/40">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-wider text-ink-variant mb-1.5">Stok</label>
+                    <input type="number" name="stok" id="edit_stok" min="0" class="w-full px-3 py-2.5 bg-surface border border-outline-variant/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/40">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold uppercase tracking-wider text-ink-variant mb-1.5">Foto Barang</label>
+                    <div class="flex items-center gap-3">
+                        <img id="edit_foto_preview" src="" alt="" class="w-12 h-12 rounded-lg object-cover border border-outline-variant/40 hidden">
+                        <span id="edit_foto_kosong" class="w-12 h-12 rounded-lg bg-surface flex items-center justify-center text-ink-variant/40">
+                            <span class="material-symbols-outlined text-[20px]">image</span>
+                        </span>
+                        <input type="file" name="foto" id="edit_foto" accept="image/*" capture="environment" onchange="previewFoto(this)"
+                               class="text-sm text-ink-variant file:mr-2 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-brand file:text-white file:text-xs file:font-bold file:cursor-pointer cursor-pointer">
                     </div>
                 </div>
-                <button type="submit" class="btn btn-primary">💾 Update</button>
-            </form>
-        </div>
+            </div>
+            <button type="submit" class="mt-5 w-full flex items-center justify-center gap-2 bg-brand hover:bg-brand-light text-white font-bold py-3 rounded-lg transition-colors">
+                <span class="material-symbols-outlined text-[18px]">save</span>Update Barang
+            </button>
+        </form>
     </div>
 </div>
+{% endblock %}
 
+{% block scripts %}
 <script>
-function editBarang(id, kode, nama, kategoriId, hargaBeli, hargaJual, stok, satuan) {
+function editBarang(id, nama, kategoriId, hargaBeli, hargaJual, stok, satuan, foto) {
     document.getElementById('editForm').action = '/barang/edit/' + id;
-    document.getElementById('edit_kode').value = kode;
     document.getElementById('edit_nama').value = nama;
     document.getElementById('edit_kategori').value = kategoriId || '';
     document.getElementById('edit_harga_beli').value = hargaBeli;
     document.getElementById('edit_harga_jual').value = hargaJual;
     document.getElementById('edit_stok').value = stok;
     document.getElementById('edit_satuan').value = satuan;
-    document.getElementById('editModal').style.display = 'flex';
+    document.getElementById('edit_foto').value = '';
+    var preview = document.getElementById('edit_foto_preview');
+    var kosong = document.getElementById('edit_foto_kosong');
+    if (foto) {
+        preview.src = '/static/uploads/' + foto;
+        preview.classList.remove('hidden');
+        kosong.classList.add('hidden');
+    } else {
+        preview.classList.add('hidden');
+        kosong.classList.remove('hidden');
+    }
+    document.getElementById('editModal').classList.add('open');
+}
+function previewFoto(input) {
+    var preview = document.getElementById('edit_foto_preview');
+    var kosong = document.getElementById('edit_foto_kosong');
+    if (input.files && input.files[0]) {
+        preview.src = URL.createObjectURL(input.files[0]);
+        preview.classList.remove('hidden');
+        kosong.classList.add('hidden');
+    }
 }
 </script>
 {% endblock %}

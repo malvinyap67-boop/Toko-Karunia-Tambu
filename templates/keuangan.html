@@ -1,125 +1,114 @@
 {% extends "base.html" %}
-{% block title %}Keuangan - Toko Karunia Tambu{% endblock %}
+{% block title %}{% if jenis_filter == 'pengeluaran' %}Pengeluaran{% else %}Pemasukan{% endif %} - Toko Karunia Tambu{% endblock %}
 {% block content %}
-<div class="page-header">
-    <h1>💰 Keuangan</h1>
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <div>
+        <h1 class="text-3xl font-extrabold">Pemasukan &amp; Pengeluaran</h1>
+        <p class="text-sm text-ink-variant mt-1">Catat dan pantau arus kas toko. Klik riwayat penjualan untuk melihat nota.</p>
+    </div>
+    <div class="flex items-center gap-2">
+        <a href="{{ url_for('nota_daftar') }}" class="flex items-center gap-2 bg-surface hover:bg-outline-variant/30 text-ink-variant text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors">
+            <span class="material-symbols-outlined text-[18px]">history</span>Riwayat Nota
+        </a>
+        <form method="GET" class="flex items-center gap-2">
+            <input type="month" name="bulan" value="{{ bulan }}" class="px-3 py-2.5 bg-card border border-outline-variant/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/40">
+            <button type="submit" class="flex items-center gap-1 bg-surface hover:bg-outline-variant/30 text-ink-variant text-sm font-semibold px-4 py-2.5 rounded-lg transition-colors">
+                <span class="material-symbols-outlined text-[18px]">filter_list</span>Filter
+            </button>
+        </form>
+    </div>
 </div>
 
 <!-- Ringkasan -->
-<div class="stats-grid" style="grid-template-columns: repeat(3, 1fr);">
-    <div class="stat-card stat-green">
-        <div class="stat-icon">💰</div>
-        <div class="stat-info">
-            <h3>Rp {{ "{:,.0f}".format(total_pemasukan) }}</h3>
-            <p>Pemasukan</p>
-        </div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div class="bg-card rounded-xl shadow-sm p-5">
+        <span class="text-[11px] font-bold uppercase tracking-wider text-ink-variant">Pemasukan ({{ bulan }})</span>
+        <span class="text-2xl font-extrabold text-green-700 block mt-1">{{ total_pemasukan|rupiah }}</span>
     </div>
-    <div class="stat-card stat-red">
-        <div class="stat-icon">💸</div>
-        <div class="stat-info">
-            <h3>Rp {{ "{:,.0f}".format(total_pengeluaran) }}</h3>
-            <p>Pengeluaran</p>
-        </div>
+    <div class="bg-card rounded-xl shadow-sm p-5">
+        <span class="text-[11px] font-bold uppercase tracking-wider text-ink-variant">Pengeluaran ({{ bulan }})</span>
+        <span class="text-2xl font-extrabold text-error block mt-1">{{ total_pengeluaran|rupiah }}</span>
     </div>
-    <div class="stat-card {% if (total_pemasukan - total_pengeluaran) >= 0 %}stat-blue{% else %}stat-warning{% endif %}">
-        <div class="stat-icon">📊</div>
-        <div class="stat-info">
-            <h3>Rp {{ "{:,.0f}".format(total_pemasukan - total_pengeluaran) }}</h3>
-            <p>Selisih</p>
-        </div>
+    <div class="bg-card rounded-xl shadow-sm p-5">
+        <span class="text-[11px] font-bold uppercase tracking-wider text-ink-variant">Selisih</span>
+        <span class="text-2xl font-extrabold {% if (total_pemasukan - total_pengeluaran) >= 0 %}text-brand{% else %}text-error{% endif %} block mt-1">{{ (total_pemasukan - total_pengeluaran)|rupiah }}</span>
     </div>
 </div>
 
-<!-- Form Input -->
-<div class="card" style="margin-bottom:20px;">
-    <div class="card-header">
-        <h3>➕ Tambah Transaksi</h3>
-    </div>
-    <div class="card-body">
-        <form method="POST" action="{{ url_for('keuangan_tambah') }}">
-            <div class="form-grid form-grid-3">
-                <div class="form-group">
-                    <label>Jenis *</label>
-                    <select name="jenis" required>
-                        <option value="pemasukan">💰 Pemasukan</option>
-                        <option value="pengeluaran">💸 Pengeluaran</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Jumlah (Rp) *</label>
-                    <input type="number" name="jumlah" placeholder="0" min="1" required>
-                </div>
-                <div class="form-group">
-                    <label>Keterangan</label>
-                    <input type="text" name="keterangan" placeholder="Contoh: Penjualan harian, Bayar listrik">
-                </div>
+<!-- Tambah Transaksi -->
+<div class="bg-card rounded-xl shadow-sm p-6 mb-6">
+    <h2 class="text-lg font-bold flex items-center gap-2 mb-4">
+        <span class="material-symbols-outlined text-brand">add_circle</span>Tambah Transaksi
+    </h2>
+    <form method="POST" action="{{ url_for('keuangan_tambah') }}">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-[10px] font-bold uppercase tracking-wider text-ink-variant mb-1.5">Jenis *</label>
+                <select name="jenis" required class="w-full px-3 py-2.5 bg-surface border border-outline-variant/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/40">
+                    <option value="pemasukan">Pemasukan</option>
+                    <option value="pengeluaran">Pengeluaran</option>
+                </select>
             </div>
-            <button type="submit" class="btn btn-primary">💾 Simpan</button>
-        </form>
-    </div>
+            <div>
+                <label class="block text-[10px] font-bold uppercase tracking-wider text-ink-variant mb-1.5">Jumlah (Rp) *</label>
+                <input type="number" name="jumlah" placeholder="0" min="1" required class="w-full px-3 py-2.5 bg-surface border border-outline-variant/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/40">
+            </div>
+            <div>
+                <label class="block text-[10px] font-bold uppercase tracking-wider text-ink-variant mb-1.5">Keterangan</label>
+                <input type="text" name="keterangan" placeholder="Contoh: Penjualan harian, Bayar listrik" class="w-full px-3 py-2.5 bg-surface border border-outline-variant/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand/40">
+            </div>
+        </div>
+        <button type="submit" class="mt-4 flex items-center gap-2 bg-brand hover:bg-brand-light text-white font-bold px-5 py-2.5 rounded-lg transition-colors">
+            <span class="material-symbols-outlined text-[18px]">save</span>Simpan
+        </button>
+    </form>
 </div>
 
-<!-- Filter -->
-<div class="card" style="margin-bottom:20px;">
-    <div class="card-body">
-        <form method="GET" class="form-inline">
-            <label>Bulan:</label>
-            <input type="month" name="bulan" value="{{ bulan }}">
-            <select name="jenis">
-                <option value="">Semua Jenis</option>
-                <option value="pemasukan" {% if jenis_filter == 'pemasukan' %}selected{% endif %}>Pemasukan</option>
-                <option value="pengeluaran" {% if jenis_filter == 'pengeluaran' %}selected{% endif %}>Pengeluaran</option>
-            </select>
-            <button type="submit" class="btn btn-primary">Filter</button>
-        </form>
+<!-- Tabel -->
+<div class="bg-card rounded-xl shadow-sm overflow-hidden">
+    <div class="p-6 pb-4">
+        <h2 class="text-lg font-bold">Riwayat Transaksi ({{ bulan }})</h2>
     </div>
-</div>
-
-<!-- Tabel Transaksi -->
-<div class="card">
-    <div class="card-header">
-        <h3>📋 Riwayat Transaksi</h3>
-    </div>
-    <div class="card-body table-responsive">
-        {% if transaksi %}
-        <table>
+    <div class="overflow-x-auto thin-scroll">
+        <table class="w-full text-sm min-w-[720px]">
             <thead>
-                <tr>
-                    <th>Tanggal</th>
-                    <th>Waktu</th>
-                    <th>Jenis</th>
-                    <th>Jumlah</th>
-                    <th>Keterangan</th>
-                    <th>Aksi</th>
+                <tr class="text-[10px] uppercase tracking-wider text-ink-variant bg-surface border-y border-outline-variant/40">
+                    <th class="text-left px-5 py-3 font-bold">Tanggal</th>
+                    <th class="text-left px-5 py-3 font-bold">Waktu</th>
+                    <th class="text-center px-5 py-3 font-bold">Jenis</th>
+                    <th class="text-right px-5 py-3 font-bold">Jumlah</th>
+                    <th class="text-left px-5 py-3 font-bold">Keterangan</th>
+                    {% if session.get('role') == 'admin' %}<th class="px-5 py-3"></th>{% endif %}
                 </tr>
             </thead>
             <tbody>
                 {% for t in transaksi %}
-                <tr>
-                    <td>{{ t.tanggal }}</td>
-                    <td>{{ t.waktu }}</td>
-                    <td>
-                        <span class="badge {% if t.jenis == 'pemasukan' %}badge-success{% else %}badge-danger{% endif %}">
-                            {{ t.jenis|capitalize }}
-                        </span>
+                <tr class="border-b border-outline-variant/30 hover:bg-surface/60 transition-colors {% if t.id in nota_ids %}cursor-pointer{% endif %}"
+                    {% if t.id in nota_ids %}onclick="window.location='{{ url_for('nota_cetak', id=nota_ids[t.id]) }}'"{% endif %}>
+                    <td class="px-5 py-3.5 text-ink-variant">{{ t.tanggal }}</td>
+                    <td class="px-5 py-3.5 text-ink-variant">{{ t.waktu[:5] if t.waktu }}</td>
+                    <td class="px-5 py-3.5 text-center">
+                        <span class="inline-block text-[10px] font-bold uppercase rounded-full px-2.5 py-1
+                             {% if t.jenis == 'pemasukan' %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">{{ t.jenis }}</span>
                     </td>
-                    <td class="{% if t.jenis == 'pemasukan' %}text-green{% else %}text-red{% endif %}">
-                        {% if t.jenis == 'pemasukan' %}+{% else %}-{% endif %} Rp {{ "{:,.0f}".format(t.jumlah) }}
+                    <td class="px-5 py-3.5 text-right font-bold {% if t.jenis == 'pemasukan' %}text-green-700{% else %}text-error{% endif %}">
+                        {% if t.jenis == 'pemasukan' %}+{% else %}-{% endif %} {{ t.jumlah|rupiah }}
                     </td>
-                    <td>{{ t.keterangan or '-' }}</td>
-                    <td>
-                        {% if session.get('role') == 'admin' %}
-                        <a href="{{ url_for('keuangan_hapus', id=t.id) }}" class="btn btn-sm btn-danger"
-                           onclick="return confirm('Hapus transaksi ini?')">Hapus</a>
-                        {% endif %}
+                    <td class="px-5 py-3.5">{{ t.keterangan or '-' }}</td>
+                    {% if session.get('role') == 'admin' %}
+                    <td class="px-5 py-3.5 text-right">
+                        <a href="{{ url_for('keuangan_hapus', id=t.id) }}" onclick="return confirm('Hapus transaksi ini?')"
+                           class="inline-flex p-2 rounded-lg text-error hover:bg-red-50 transition-colors" title="Hapus">
+                            <span class="material-symbols-outlined text-[18px]">delete</span>
+                        </a>
                     </td>
+                    {% endif %}
                 </tr>
+                {% else %}
+                <tr><td colspan="6" class="px-5 py-10 text-center text-ink-variant/60">Belum ada transaksi bulan ini</td></tr>
                 {% endfor %}
             </tbody>
         </table>
-        {% else %}
-        <p class="text-muted text-center">Belum ada transaksi bulan ini</p>
-        {% endif %}
     </div>
 </div>
 {% endblock %}

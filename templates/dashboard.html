@@ -1,124 +1,131 @@
 {% extends "base.html" %}
 {% block title %}Dashboard - Toko Karunia Tambu{% endblock %}
 {% block content %}
-<div class="page-header">
-    <h1>📊 Dashboard</h1>
-</div>
-
-<div class="stats-grid">
-    <div class="stat-card">
-        <div class="stat-icon">📦</div>
-        <div class="stat-info">
-            <h3>{{ total_barang }}</h3>
-            <p>Total Barang</p>
-        </div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-icon">📋</div>
-        <div class="stat-info">
-            <h3>{{ total_stok }}</h3>
-            <p>Total Stok</p>
-        </div>
-    </div>
-    <div class="stat-card stat-warning">
-        <div class="stat-icon">⚠️</div>
-        <div class="stat-info">
-            <h3>{{ stok_habis }}</h3>
-            <p>Stok Habis</p>
-        </div>
-    </div>
-    <div class="stat-card stat-green">
-        <div class="stat-icon">💰</div>
-        <div class="stat-info">
-            <h3>Rp {{ "{:,.0f}".format(pemasukan_hari) }}</h3>
-            <p>Pemasukan Hari Ini</p>
-        </div>
-    </div>
-    <div class="stat-card stat-red">
-        <div class="stat-icon">💸</div>
-        <div class="stat-info">
-            <h3>Rp {{ "{:,.0f}".format(pengeluaran_hari) }}</h3>
-            <p>Pengeluaran Hari Ini</p>
-        </div>
-    </div>
-    <div class="stat-card stat-blue">
-        <div class="stat-icon">📈</div>
-        <div class="stat-info">
-            <h3>Rp {{ "{:,.0f}".format(pemasukan_bulan) }}</h3>
-            <p>Pemasukan Bulan Ini</p>
-        </div>
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <div>
+        <h1 class="text-3xl font-extrabold">Overview</h1>
+        <p class="text-sm text-ink-variant mt-1">Selamat datang kembali. Ini ringkasan toko hari ini.</p>
     </div>
 </div>
 
-<div class="dashboard-grid">
-    <div class="card">
-        <div class="card-header">
-            <h3>⚠️ Stok Rendah (≤5)</h3>
+<!-- Kartu Metrik -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div class="relative overflow-hidden bg-card p-6 rounded-xl shadow-sm group transition-all hover:shadow-md">
+        <div class="absolute -right-8 -top-8 w-32 h-32 bg-brand/5 rounded-full transition-transform group-hover:scale-110"></div>
+        <div class="flex items-center justify-between relative">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-ink-variant">Pemasukan Hari Ini</span>
+            <div class="w-8 h-8 rounded-full bg-brand-fixed/40 flex items-center justify-center text-brand">
+                <span class="material-symbols-outlined text-[20px]">trending_up</span>
+            </div>
         </div>
-        <div class="card-body">
-            {% if barang_stok_rendah %}
-            <table>
-                <thead>
-                    <tr>
-                        <th>Kode</th>
-                        <th>Nama</th>
-                        <th>Stok</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for b in barang_stok_rendah %}
-                    <tr>
-                        <td>{{ b.kode }}</td>
-                        <td>{{ b.nama }}</td>
-                        <td>
-                            <span class="badge {% if b.stok == 0 %}badge-danger{% else %}badge-warning{% endif %}">
-                                {{ b.stok }}
-                            </span>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% else %}
-            <p class="text-muted">Semua stok aman</p>
-            {% endif %}
+        <div class="relative mt-4">
+            <span class="text-2xl font-extrabold block">{{ pemasukan_hari|rupiah }}</span>
+            <a href="{{ url_for('keuangan_page') }}" class="text-xs text-brand mt-1 inline-flex items-center gap-1 hover:underline">
+                <span class="material-symbols-outlined text-[14px]">north_east</span>Bulan ini: {{ pemasukan_bulan|rupiah }}
+            </a>
         </div>
     </div>
 
-    <div class="card">
-        <div class="card-header">
-            <h3>📦 Transaksi Stok Terakhir</h3>
+    <div class="relative overflow-hidden bg-card p-6 rounded-xl shadow-sm group transition-all hover:shadow-md">
+        <div class="absolute -right-8 -top-8 w-32 h-32 bg-error/5 rounded-full transition-transform group-hover:scale-110"></div>
+        <div class="flex items-center justify-between relative">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-ink-variant">Pengeluaran</span>
+            <div class="w-8 h-8 rounded-full bg-error-bg flex items-center justify-center text-error">
+                <span class="material-symbols-outlined text-[20px]">trending_down</span>
+            </div>
         </div>
-        <div class="card-body">
-            {% if transaksi_terakhir %}
-            <table>
-                <thead>
-                    <tr>
-                        <th>Tanggal</th>
-                        <th>Barang</th>
-                        <th>Jenis</th>
-                        <th>Jumlah</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for t in transaksi_terakhir %}
-                    <tr>
-                        <td>{{ t.tanggal }}</td>
-                        <td>{{ t.nama_barang }}</td>
-                        <td>
-                            <span class="badge {% if t.jenis == 'masuk' %}badge-success{% else %}badge-danger{% endif %}">
-                                {{ t.jenis|upper }}
-                            </span>
-                        </td>
-                        <td>{{ t.jumlah }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <div class="relative mt-4">
+            <span class="text-2xl font-extrabold block">{{ pengeluaran_hari|rupiah }}</span>
+            <span class="text-xs text-ink-variant mt-1 block">Bulan ini: {{ pengeluaran_bulan|rupiah }}</span>
+        </div>
+    </div>
+
+    <div class="relative overflow-hidden bg-card p-6 rounded-xl shadow-sm group transition-all hover:shadow-md">
+        <div class="absolute -right-8 -top-8 w-32 h-32 bg-error/5 rounded-full transition-transform group-hover:scale-110"></div>
+        <div class="flex items-center justify-between relative">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-ink-variant">Stok Menipis</span>
+            <div class="w-8 h-8 rounded-full bg-error/10 flex items-center justify-center text-error">
+                <span class="material-symbols-outlined text-[20px]">warning</span>
+            </div>
+        </div>
+        <div class="relative mt-4">
+            <span class="text-2xl font-extrabold">{{ stok_habis }} <span class="text-base font-bold text-ink-variant">Habis</span></span>
+            <a href="{{ url_for('barang_list') }}" class="text-xs text-brand mt-1 inline-block hover:underline">Lihat daftar item →</a>
+        </div>
+    </div>
+
+    <a href="{{ url_for('nota_buat') }}" class="relative overflow-hidden bg-brand text-white p-6 rounded-xl shadow-md group transition-all hover:shadow-lg">
+        <div class="absolute -right-12 -bottom-12 w-48 h-48 bg-white/10 rounded-full transition-transform group-hover:scale-110"></div>
+        <div class="flex items-center justify-between relative">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-brand-dim">Transaksi Baru</span>
+            <div class="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white">
+                <span class="material-symbols-outlined text-[20px]">receipt_long</span>
+            </div>
+        </div>
+        <div class="relative mt-4">
+            <span class="text-2xl font-extrabold">{{ transaksi_nota_hari }}</span>
+            <span class="text-xs text-brand-dim mt-1 block">Hari ini — klik untuk buat nota</span>
+        </div>
+    </a>
+</div>
+
+<!-- Aktivitas -->
+<div class="grid grid-cols-1 xl:grid-cols-2 gap-4">
+    <!-- Stok Menipis -->
+    <div class="bg-card rounded-xl shadow-sm p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="font-bold">Stok Menipis (≤5)</h2>
+            <a href="{{ url_for('barang_list') }}" class="text-xs text-brand font-semibold hover:underline">Lihat Semua</a>
+        </div>
+        <div class="space-y-2">
+            {% for b in barang_stok_rendah %}
+            <div class="flex items-center justify-between px-3 py-2.5 bg-surface rounded-lg">
+                <div>
+                    <span class="text-sm font-semibold">{{ b.nama }}</span>
+                    <span class="block text-[10px] text-ink-variant">{{ b.kode }}</span>
+                </div>
+                <span class="text-[10px] font-bold uppercase rounded-full px-2.5 py-1
+                     {% if b.stok == 0 %}bg-red-100 text-red-700{% else %}bg-amber-100 text-amber-700{% endif %}">{{ b.stok }} {{ b.satuan }}</span>
+            </div>
             {% else %}
-            <p class="text-muted">Belum ada transaksi</p>
-            {% endif %}
+            <p class="text-sm text-ink-variant/60 text-center py-8">Semua stok aman</p>
+            {% endfor %}
         </div>
+    </div>
+</div>
+
+<!-- Aktivitas Terakhir -->
+<div class="bg-card rounded-xl shadow-sm p-6 mt-4">
+    <div class="flex items-center justify-between mb-4">
+        <h2 class="font-bold">Aktivitas Stok Terakhir</h2>
+        <a href="{{ url_for('stok_page') }}" class="text-xs text-brand font-semibold hover:underline">Lihat Semua</a>
+    </div>
+    <div class="overflow-x-auto thin-scroll">
+        <table class="w-full text-sm min-w-[560px]">
+            <thead>
+                <tr class="text-[10px] uppercase tracking-wider text-ink-variant border-b border-outline-variant/40">
+                    <th class="text-left py-2 font-bold">Tanggal</th>
+                    <th class="text-left py-2 font-bold">Barang</th>
+                    <th class="text-center py-2 font-bold">Jenis</th>
+                    <th class="text-right py-2 font-bold">Jumlah</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in transaksi_terakhir %}
+                <tr class="border-b border-outline-variant/30">
+                    <td class="py-2.5 text-ink-variant">{{ t.tanggal }}</td>
+                    <td class="py-2.5 font-semibold">{{ t.nama_barang }}</td>
+                    <td class="py-2.5 text-center">
+                        <span class="inline-block text-[10px] font-bold uppercase rounded-full px-2.5 py-1
+                             {% if t.jenis == 'masuk' %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">{{ t.jenis }}</span>
+                    </td>
+                    <td class="py-2.5 text-right font-bold">{{ t.jumlah }}</td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4" class="py-8 text-center text-ink-variant/60">Belum ada transaksi</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
 </div>
 {% endblock %}

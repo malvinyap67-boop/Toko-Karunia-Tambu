@@ -8,6 +8,7 @@ venv/
 database/toko.db
 instance/
 *.db
+static/uploads/
 
 # OS
 .DS_Store
